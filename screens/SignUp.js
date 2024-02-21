@@ -185,7 +185,8 @@ export default function SignUp({navigation}) {
                         placeholderTextColor="#aaaaaa"
                         placeholder='User Name'
                         onChangeText={(text) => {
-                            setUserName(text); 
+                            
+                            setUserName(text.trim()); 
                         }}
                         value={userName}
                         underlineColorAndroid="transparent"
