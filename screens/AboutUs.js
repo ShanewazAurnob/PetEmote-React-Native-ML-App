@@ -38,10 +38,13 @@ export default function AboutUs() {
 
         <Text style={styles.subHeading}>Introduction</Text>
         <Text style={styles.paragraph}>
-          Sudoku is a popular logic-based number puzzle. The goal is to fill a 9x9 grid with digits
-          so that each column, each row, and each of the nine 3x3 subgrids contains all of the
-          digits from 1 to 9. Here are some simple yet effective tips and tricks to help you solve
-          Sudoku puzzles more efficiently.
+        Welcome to PetEmote, where we bring the world of emotions closer to your furry companions!
+
+At PetEmote, we're a dedicated team of developers, designers, and pet enthusiasts on a mission to revolutionize the way we understand and interact with our pets. Our journey began with a simple question: "What if we could understand our pets' emotions better?" And thus, PetEmote was born.
+
+We understand the profound bond between humans and animals. Pets aren't just animals; they're cherished members of our families, providing us with unconditional love, joy, and companionship. However, understanding their feelings and needs isn't always straightforward.
+
+With the power of cutting-edge technology, artificial intelligence, and machine learning, we've developed PetEmote to bridge this communication gap. Our app uses advanced algorithms to analyze and recognize facial expressions in pets, allowing you to decipher their emotions with ease.
         </Text>
       </ScrollView>
     </View>
