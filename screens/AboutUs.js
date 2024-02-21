@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import React from 'react'
 import { WebView } from 'react-native-webview';
+import MapView, { Marker } from 'react-native-maps';
 
 export default function AboutUs() {
   return (
@@ -15,6 +16,24 @@ export default function AboutUs() {
                 source={{ uri: 'https://www.youtube.com/embed/M2C9T34RFaQ' }}
             />
         </View>
+        <View style={styles.mapViewContainer}>
+                    <Text style={styles.aboutText}>HeadOffice</Text>
+                    <MapView style={{flex:1}}
+                        // provider={PROVIDER_GOOGLE}
+                        initialRegion={{
+                            latitude: 22.4716,
+                            longitude: 91.7877,
+                            latitudeDelta: 0.0222,
+                            longitudeDelta: 0.0921,
+                        }}
+                    >
+                        <Marker
+                            coordinate={{ latitude: 22.4716, longitude: 91.7877 }}
+                            title="Sudoku Forever"
+                            description="Headoffice of Sudoku Forever"
+                            />
+                    </MapView>
+        </View>
 
 
         <Text style={styles.subHeading}>Introduction</Text>
@@ -23,40 +42,6 @@ export default function AboutUs() {
           so that each column, each row, and each of the nine 3x3 subgrids contains all of the
           digits from 1 to 9. Here are some simple yet effective tips and tricks to help you solve
           Sudoku puzzles more efficiently.
-        </Text>
-        <Text style={styles.subHeading}>1. Start with the Easy Numbers</Text>
-        <Text style={styles.paragraph}>
-          Begin by identifying the easily solvable numbers. Look for cells with single-digit
-          possibilities and fill them in. This will help you uncover more numbers as you progress.
-        </Text>
-        <Text style={styles.subHeading}>2. Use the "What's Missing?" Approach</Text>
-        <Text style={styles.paragraph}>
-          Focus on each number individually and scan rows, columns, and boxes to identify missing
-          digits. By narrowing down the possibilities, you can make more informed choices for each
-          cell.
-        </Text>
-        <Text style={styles.subHeading}>3. Apply the Elimination Technique</Text>
-        <Text style={styles.paragraph}>
-          Look for cells that have limited possibilities. Cross out numbers that are already present
-          in the same row, column, or box. This process of elimination will help you determine the
-          correct value for each cell.
-        </Text>
-        <Text style={styles.subHeading}>4. Utilize the "What's Left?" Strategy</Text>
-        <Text style={styles.paragraph}>
-          Once you have filled in all the easily solvable cells, focus on the remaining numbers and
-          scan rows, columns, and boxes to identify possible locations. This approach helps you
-          narrow down the options and make logical deductions.
-        </Text>
-        <Text style={styles.subHeading}>5. Practice and Patience</Text>
-        <Text style={styles.paragraph}>
-          Sudoku requires practice to sharpen your skills. With time and patience, you will develop
-          a better understanding of the patterns and strategies involved in solving Sudoku puzzles.
-        </Text>
-        <Text style={styles.subHeading}>Conclusion</Text>
-        <Text style={styles.paragraph}>
-          Sudoku is an engaging puzzle that can be mastered with the right techniques. By applying
-          the tips and tricks mentioned above and practicing regularly, you'll become a Sudoku
-          pro! Happy solving!
         </Text>
       </ScrollView>
     </View>
@@ -95,5 +80,20 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 12,
       },
+      mapViewContainer:{
+        backgroundColor:'white',
+        marginVertical:10,
+        marginHorizontal:8,
+        padding:10,
+        borderWidth:2,
+        borderColor:'#e80505',
+        borderRadius:10,
+        height:350,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
     });
     
