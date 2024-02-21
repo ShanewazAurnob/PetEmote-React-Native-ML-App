@@ -8,6 +8,7 @@ import moment from 'moment';
 import { FontAwesome } from '@expo/vector-icons';
 import { useEffect } from 'react';
 import {gsap, Back} from 'gsap-rn';
+import { Ionicons } from '@expo/vector-icons';
 
 
 
@@ -24,6 +25,8 @@ export default function SignUp({navigation}) {
     const [birthDateModalStatus, setbirthDateModalStatus] = useState(false)
     const [loading, setloading] = useState(false)
     const [showMultipleTextBox, setshowMultipleTextBox] = useState(false)
+    const [showPassword, setShowPassword]= useState(false)
+    const [showConfirmPassword, setshowConfirmPassword] = useState(false)
 
 
     const viewRef = useRef(null);
@@ -203,27 +206,39 @@ export default function SignUp({navigation}) {
                         autoCapitalize="none"
                     />
                     {emailErrorMessage[0].length>0 && email.length>0 && <Text style={{color:emailErrorMessage[1],paddingLeft:20,fontSize:13}}>*{emailErrorMessage[0]}*</Text>}
-                    {
-                    showMultipleTextBox && <TextInput 
-                        style={styles.input}
-                        placeholderTextColor="#aaaaaa"
-                        secureTextEntry
-                        placeholder='Password'
-                        onChangeText={(text) => {setPassword(text); seterrorMessage('')}}
-                        value={password}
-                        underlineColorAndroid="transparent"
-                        autoCapitalize="none"
-                    />}
-                    {showMultipleTextBox && <TextInput
-                        style={styles.input}
-                        placeholderTextColor="#aaaaaa"
-                        secureTextEntry
-                        placeholder='Confirm password'
-                        onChangeText={(text) => {setconfirmPassword(text);   seterrorMessage('');}}
-                        value={confirmPassword}
-                        underlineColorAndroid="transparent"
-                        autoCapitalize="none"
-                    />}
+                    {showMultipleTextBox && 
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={[styles.passwordInput,styles.input]}
+                                placeholderTextColor="#aaaaaa"
+                                secureTextEntry={!showPassword}
+                                placeholder='Password'
+                                onChangeText={(text) => { setPassword(text); seterrorMessage('') }}
+                                value={password}
+                                autoCapitalize="none"
+                            />
+                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color="#aaaaaa" />
+                            </TouchableOpacity>
+                        </View>
+                    }
+                    {showMultipleTextBox && 
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={[styles.passwordInput,styles.input]}
+                                placeholderTextColor="#aaaaaa"
+                                secureTextEntry={!showConfirmPassword}
+                                placeholder='Confirm Password'
+                                onChangeText={(text) => { setconfirmPassword(text); seterrorMessage('') }}
+                                value={confirmPassword}
+                                autoCapitalize="none"
+                            />
+                            <TouchableOpacity onPress={() => setshowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={24} color="#aaaaaa" />
+                            </TouchableOpacity>
+                        </View>
+                    }
+                    
                     {showMultipleTextBox &&
                     <TouchableOpacity
                         style={styles.birthdayPicker}
@@ -341,5 +356,22 @@ const styles = StyleSheet.create({
         color: "#e80505",
         fontWeight: "bold",
         fontSize: 16
-    }
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderColor: 'gray',
+        width: '100%',
+        position:'relative'
+    },
+    passwordInput: {
+        flex: 1,
+        height: 40,
+        paddingHorizontal: 10,
+    },
+    eyeIcon: {
+        padding: 10,
+        position:'absolute',
+        right:20
+    },
 })

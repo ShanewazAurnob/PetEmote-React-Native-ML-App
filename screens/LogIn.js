@@ -115,7 +115,7 @@ export default function LoginScreen({ navigation }) {
                     onPress={() => {setIsRememberMeChecked(!isRememberMeChecked);}}
                     color={isRememberMeChecked ? '#e80909' : undefined}
                 />
-                <Text onPress={() => {setIsRememberMeChecked(!isRememberMeChecked);}} style={styles.checkboxLabel}>Keep me logged in</Text>
+                <Text onPress={() => {setIsRememberMeChecked(!isRememberMeChecked);}} style={styles.checkboxLabel}>Remember me</Text>
             </View>
             {errorMessage.length > 0 && <Text style={styles.errorMessage}>*{errorMessage}*</Text>}
             <TouchableOpacity
