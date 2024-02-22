@@ -1,12 +1,40 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Dimensions, Linking, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
 import MapView, { Marker } from 'react-native-maps';
 import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome icons
+import firebase from 'firebase/app';
+import 'firebase/firestore';
 
 const AboutUs = () => {
+  const [rating, setRating] = useState(0);
+
   const openLink = (url) => {
     Linking.openURL(url);
+  };
+
+  const submitRating = () => {
+    if (rating > 0) {
+      const db = firebase.firestore();
+      db.collection('appRatings').add({
+        rating: rating,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      })
+      .then(() => {
+        console.log("Rating submitted successfully!");
+        // Show pop-up notification here
+        alert(`Thank you for your rating! You rated our app ${rating} stars.`);
+      })
+      .catch((error) => {
+        console.error("Error submitting rating: ", error);
+        // Show pop-up notification for error if needed
+        alert('Error submitting rating. Please try again later.');
+      });
+    } else {
+      // Handle case where user didn't select any rating
+      // Show pop-up notification to prompt the user to select a rating
+      alert('Please select a rating before submitting.');
+    }
   };
 
   return (
@@ -14,6 +42,7 @@ const AboutUs = () => {
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.heading}>About PetEmote</Text>
 
+        {/* Display YouTube Video */}
         <View style={styles.videoContainer}>
           <Text style={styles.subHeading}>YouTube Video</Text>
           <WebView
@@ -23,6 +52,7 @@ const AboutUs = () => {
           />
         </View>
 
+        {/* Display Location on Map */}
         <View style={styles.mapContainer}>
           <Text style={styles.subHeading}>Head Office Location</Text>
           <MapView
@@ -42,12 +72,14 @@ const AboutUs = () => {
           </MapView>
         </View>
 
+        {/* Display Introduction */}
         <Text style={styles.subHeading}>Introduction</Text>
         <Text style={styles.paragraph}>
           Welcome to PetEmote, where we bring the world of emotions closer to your furry companions!
           {/* Your introduction text goes here */}
         </Text>
 
+        {/* Display Contact Information */}
         <Text style={styles.subHeading}>Contact Information</Text>
         <Text style={styles.paragraph}>
           Email: aurnob.shanewaz@gmail.com.{'\n'}
@@ -55,6 +87,7 @@ const AboutUs = () => {
           Address: 1no Gate of Chittagong University, Chittagong, Bangladesh.
         </Text>
 
+        {/* Display Social Media Links */}
         <View style={styles.socialMediaContainer}>
           <Text style={styles.subHeading}>Social Media</Text>
           <View style={styles.socialMediaLinks}>
@@ -82,12 +115,36 @@ const AboutUs = () => {
           </View>
         </View>
 
+        {/* Display FAQs */}
         <Text style={styles.subHeading}>FAQs</Text>
         <Text style={styles.paragraph}>
           Q: What is PetEmote?{'\n'}
           A: PetEmote is a revolutionary app that helps you understand your pet's emotions better.
           {/* Add more FAQs and answers as needed */}
         </Text>
+
+        {/* Rating Option */}
+        <View style={styles.ratingContainer}>
+          <Text style={styles.subHeading}>Rate Our App</Text>
+          <View style={styles.starsContainer}>
+            {[1, 2, 3, 4, 5].map((star, index) => (
+              <TouchableOpacity 
+                key={index} 
+                onPress={() => setRating(star)}
+              >
+                <FontAwesome
+                  name={star <= rating ? "star" : "star-o"}
+                  size={30}
+                  color={star <= rating ? "#FFD700" : "#ccc"}
+                  style={styles.starIcon}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity onPress={submitRating}>
+            <Text style={styles.submitButton}>Submit Rating</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -149,6 +206,22 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginHorizontal: 10,
+  },
+  ratingContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  starsContainer: {
+    flexDirection: 'row',
+  },
+  starIcon: {
+    marginHorizontal: 2,
+  },
+  submitButton: {
+    marginTop: 10,
+    fontSize: 18,
+    color: '#007bff', // You can change the color to match your design
+    textDecorationLine: 'underline',
   },
 });
 

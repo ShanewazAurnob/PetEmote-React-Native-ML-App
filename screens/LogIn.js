@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     button: {
-        backgroundColor: '#e80505',
+        backgroundColor: '#0066cc',
         paddingVertical: 12,
         borderRadius: 5,
         width: '100%',
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     },
     footerLink: {
         fontSize: 16,
-        color: '#007bff',
+        color: '#e80505',
         marginLeft: 5,
     },
     modalContainer: {
