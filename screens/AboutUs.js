@@ -1,102 +1,155 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import React from 'react'
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet, Dimensions, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
 import MapView, { Marker } from 'react-native-maps';
+import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome icons
 
-export default function AboutUs() {
+const AboutUs = () => {
+  const openLink = (url) => {
+    Linking.openURL(url);
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.heading}>About PetEmote</Text>
 
-        <View style={styles.YTcontainer}>
-            <WebView
-                style={styles.video}
-                javaScriptEnabled={true}
-                source={{ uri: 'https://www.youtube.com/embed/M2C9T34RFaQ' }}
-            />
-        </View>
-        <View style={styles.mapViewContainer}>
-                    <Text style={styles.aboutText}>HeadOffice</Text>
-                    <MapView style={{flex:1}}
-                        // provider={PROVIDER_GOOGLE}
-                        initialRegion={{
-                            latitude: 22.4716,
-                            longitude: 91.7877,
-                            latitudeDelta: 0.0222,
-                            longitudeDelta: 0.0921,
-                        }}
-                    >
-                        <Marker
-                            coordinate={{ latitude: 22.4716, longitude: 91.7877 }}
-                            title="Sudoku Forever"
-                            description="Headoffice of Sudoku Forever"
-                            />
-                    </MapView>
+        <View style={styles.videoContainer}>
+          <Text style={styles.subHeading}>YouTube Video</Text>
+          <WebView
+            style={styles.video}
+            javaScriptEnabled={true}
+            source={{ uri: 'https://www.youtube.com/embed/M2C9T34RFaQ' }}
+          />
         </View>
 
+        <View style={styles.mapContainer}>
+          <Text style={styles.subHeading}>Head Office Location</Text>
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: 22.4716,
+              longitude: 91.7877,
+              latitudeDelta: 0.05,
+              longitudeDelta: 0.05,
+            }}
+          >
+            <Marker
+              coordinate={{ latitude: 22.4716, longitude: 91.7877 }}
+              title="PetEmote"
+              description="Head Office of PetEmote"
+            />
+          </MapView>
+        </View>
 
         <Text style={styles.subHeading}>Introduction</Text>
         <Text style={styles.paragraph}>
-        Welcome to PetEmote, where we bring the world of emotions closer to your furry companions!
+          Welcome to PetEmote, where we bring the world of emotions closer to your furry companions!
+          {/* Your introduction text goes here */}
+        </Text>
 
-At PetEmote, we're a dedicated team of developers, designers, and pet enthusiasts on a mission to revolutionize the way we understand and interact with our pets. Our journey began with a simple question: "What if we could understand our pets' emotions better?" And thus, PetEmote was born.
+        <Text style={styles.subHeading}>Contact Information</Text>
+        <Text style={styles.paragraph}>
+          Email: aurnob.shanewaz@gmail.com.{'\n'}
+          Phone: +8801685-530730{'\n'}
+          Address: 1no Gate of Chittagong University, Chittagong, Bangladesh.
+        </Text>
 
-We understand the profound bond between humans and animals. Pets aren't just animals; they're cherished members of our families, providing us with unconditional love, joy, and companionship. However, understanding their feelings and needs isn't always straightforward.
+        <View style={styles.socialMediaContainer}>
+          <Text style={styles.subHeading}>Social Media</Text>
+          <View style={styles.socialMediaLinks}>
+            <FontAwesome
+              name="facebook-square"
+              size={24}
+              color="#3b5998"
+              style={styles.icon}
+              onPress={() => openLink('https://www.facebook.com/s.aurnob')}
+            />
+            <FontAwesome
+              name="twitter-square"
+              size={24}
+              color="#00acee"
+              style={styles.icon}
+              onPress={() => openLink('hhttps://twitter.com/ShanewazAurnob')}
+            />
+            <FontAwesome
+              name="instagram"
+              size={24}
+              color="#c13584"
+              style={styles.icon}
+              onPress={() => openLink('https://www.instagram.com/__aur_nob__/')}
+            />
+          </View>
+        </View>
 
-With the power of cutting-edge technology, artificial intelligence, and machine learning, we've developed PetEmote to bridge this communication gap. Our app uses advanced algorithms to analyze and recognize facial expressions in pets, allowing you to decipher their emotions with ease.
+        <Text style={styles.subHeading}>FAQs</Text>
+        <Text style={styles.paragraph}>
+          Q: What is PetEmote?{'\n'}
+          A: PetEmote is a revolutionary app that helps you understand your pet's emotions better.
+          {/* Add more FAQs and answers as needed */}
         </Text>
       </ScrollView>
     </View>
-  )
-}
-
+  );
+};
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#fff',
-      paddingHorizontal: 20,
-    },
-    heading: {
-      fontSize: 26,
-      fontWeight: 'bold',
-      marginBottom: 10,
-      color:'#b30e14',
-      paddingTop: 30,
-    },
-    YTcontainer:{
-        flex:1
-    },
-    video: {
-        flex: 1,
-        height:200,
-        width:'100%'
-    },
-    subHeading: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      marginVertical: 12,
-      color:'#e80505'
-    },
-    paragraph: {    
-        fontSize: 16,
-        marginBottom: 12,
-      },
-      mapViewContainer:{
-        backgroundColor:'white',
-        marginVertical:10,
-        marginHorizontal:8,
-        padding:10,
-        borderWidth:2,
-        borderColor:'#e80505',
-        borderRadius:10,
-        height:350,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 4,
-    },
-    });
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+  },
+  heading: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#e80505', // Changed color to a different color
+    paddingTop: 30,
+  },
+  videoContainer: {
+    marginBottom: 20,
+  },
+  subHeading: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 12,
+    color: '#28a745'
+  },
+  video: {
+    height: 200,
+    width: Dimensions.get('window').width - 40,
+  },
+  mapContainer: {
+    backgroundColor: 'white',
+    marginVertical: 10,
+    padding: 10,
     
+    borderColor: '#e80505',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  map: {
+    height: 200,
+    borderRadius: 10,
+  },
+  paragraph: {
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  socialMediaContainer: {
+    marginTop: 20,
+  },
+  socialMediaLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  icon: {
+    marginHorizontal: 10,
+  },
+});
+
+export default AboutUs;
