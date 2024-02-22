@@ -104,9 +104,10 @@ export default function LoginScreen({ navigation }) {
                     value={password}
                     autoCapitalize="none"
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color="#aaaaaa" />
-                </TouchableOpacity>
+               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                    <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={24} color="#aaaaaa" />
+                        </TouchableOpacity>
+
             </View>
             <View style={styles.checkboxContainer}>
                 <Checkbox

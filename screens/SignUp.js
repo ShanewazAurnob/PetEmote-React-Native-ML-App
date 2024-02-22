@@ -218,8 +218,9 @@ export default function SignUp({navigation}) {
                                 autoCapitalize="none"
                             />
                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color="#aaaaaa" />
-                            </TouchableOpacity>
+                             <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={24} color="#aaaaaa" />
+                                </TouchableOpacity>
+
                         </View>
                     }
                     {showMultipleTextBox && 
@@ -233,9 +234,10 @@ export default function SignUp({navigation}) {
                                 value={confirmPassword}
                                 autoCapitalize="none"
                             />
-                            <TouchableOpacity onPress={() => setshowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={24} color="#aaaaaa" />
+                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                            <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={24} color="#aaaaaa" />
                             </TouchableOpacity>
+
                         </View>
                     }
                     
