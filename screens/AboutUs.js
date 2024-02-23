@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Dimensions, Linking, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
 import MapView, { Marker } from 'react-native-maps';
 import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome icons
 import firebase from 'firebase/app';
-import 'firebase/firestore';
+import { firestore } from '../config';
+import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+// import { firestore } from 'firebase/firestore';//////////////////////
 
 const AboutUs = () => {
   const [rating, setRating] = useState(0);
+  const randomId = useId();
 
   const openLink = (url) => {
     Linking.openURL(url);
@@ -15,10 +18,11 @@ const AboutUs = () => {
 
   const submitRating = () => {
     if (rating > 0) {
-      const db = firebase.firestore();
-      db.collection('appRatings').add({
+      // const db = firebase.firestore();
+      setDoc(doc(firestore, "appRatings", randomId), {
         rating: rating,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        timestamp: serverTimestamp(),
+        id: randomId,
       })
       .then(() => {
         console.log("Rating submitted successfully!");
@@ -67,7 +71,7 @@ const AboutUs = () => {
             <Marker
               coordinate={{ latitude: 22.4716, longitude: 91.7877 }}
               title="PetEmote"
-              description="Head Office of PetEmote"
+              description="Head Office"
             />
           </MapView>
         </View>

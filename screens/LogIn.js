@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Modal, ActivityIndicator, Pressable } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../config';
+import { auth, firestore } from '../config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,7 +47,7 @@ export default function LoginScreen({ navigation }) {
 
     const intermediateSignUp = async (user) => {
         if (user.emailVerified) {
-            const usersRef = collection(db, "users");
+            const usersRef = collection(firestore, "users");
             const q = query(usersRef, where("email", "==", email));
             const querySnapshot = await getDocs(q);
             querySnapshot.forEach((doc) => {
