@@ -5,78 +5,94 @@ import MapView, { Marker } from 'react-native-maps';
 import { FontAwesome } from '@expo/vector-icons'; 
 import firebase from 'firebase/app';
 import { firestore } from '../config';
-import { collection, doc, serverTimestamp, setDoc, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, setDoc, getDocs, query, orderBy, limit, aggregate } from 'firebase/firestore';
+import 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 
 const AboutUs = () => {
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalRatings, setTotalRatings] = useState(0);
+  const [totalRatingUsers, setTotalRatingUsers] = useState(0);
 
   useEffect(() => {
-    // Fetch reviews from Firestore
-    const fetchReviews = async () => {
-      const reviewsSnapshot = await getDocs(query(collection(firestore, 'reviews'), orderBy('timestamp', 'desc')));
-      const reviewsData = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setReviews(reviewsData);
+    const fetchRatingsAndReviews = async () => {
+      try {
+        // Fetch last 2 reviews
+        const reviewsSnapshot = await getDocs(query(collection(firestore, 'reviews'), orderBy('timestamp', 'desc'), limit(2)));
+        const reviewsData = reviewsSnapshot.docs.map(doc => doc.data());
+
+        // Calculate total ratings, average rating, and total rating users
+        const ratingsSnapshot = await getDocs(collection(firestore, 'appRatings'));
+        let totalRatings = 0;
+        let ratingCount = 0;
+        let uniqueUsers = new Set();
+        ratingsSnapshot.docs.forEach(doc => {
+          const ratingData = doc.data();
+          totalRatings += ratingData.rating;
+          ratingCount++;
+          uniqueUsers.add(ratingData.userId);
+        });
+        const averageRating = ratingCount > 0 ? totalRatings / ratingCount : 0;
+
+        // Update state
+        setReviews(reviewsData);
+        setTotalRatings(totalRatings);
+        setAverageRating(averageRating);
+        setTotalRatingUsers(uniqueUsers.size);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        // Handle error
+      }
     };
 
-    fetchReviews();
+    fetchRatingsAndReviews();
   }, []);
 
   const openLink = (url) => {
     Linking.openURL(url);
   };
 
-  const submitRating = () => {
-    if (rating > 0) {
-      setDoc(doc(firestore, "appRatings", randomId), {
+  const submitRatingAndReview = async () => {
+    try {
+      const user = firebase.auth().currentUser;
+      if (!user) {
+        return Alert.alert('Please sign in to leave a review.');
+      }
+    
+      if (rating === 0) {
+        return Alert.alert('Please provide a rating.');
+      }
+    
+      const review = {
+        userId: user.uid,
+        rating,
+        reviewText,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+    
+      // Add the review to Firestore
+      await firestore.collection('reviews').add(review);
+      
+      // Add the rating to Firestore with the user's ID as the document ID
+      await setDoc(doc(firestore, "appRatings", user.uid), {
         rating: rating,
-        timestamp: serverTimestamp(),
-        id: randomId,
-      })
-      .then(() => {
-        console.log("Rating submitted successfully!");
-        alert(`Thank you for your rating! You rated our app ${rating} stars.`);
-      })
-      .catch((error) => {
-        console.error("Error submitting rating: ", error);
-        alert('Error submitting rating. Please try again later.');
+        userId: user.uid,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       });
-    } else {
-      alert('Please select a rating before submitting.');
+
+      Alert.alert('Thank you for your review and rating!');
+      setRating(0);
+      setReviewText('');
+    
+      // After submitting a review and rating, fetch the updated list of reviews and ratings
+      fetchRatingsAndReviews();
+    } catch (error) {
+      console.error('Error submitting review and rating:', error);
+      Alert.alert('Error submitting review and rating. Please try again later.');
     }
-  };
-
-  const submitReview = () => {
-    const user = firebase.auth().currentUser;
-    if (!user) {
-      return Alert.alert('Please sign in to leave a review.');
-    }
-
-    if (rating === 0) {
-      return Alert.alert('Please provide a rating.');
-    }
-
-    const review = {
-      userId: user.uid,
-      rating,
-      reviewText,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    };
-
-    firebase.firestore().collection('reviews').add(review)
-      .then(() => {
-        Alert.alert('Thank you for your review!');
-        setRating(0);
-        setReviewText('');
-
-        // After submitting a review, fetch the updated list of reviews
-        fetchReviews();
-      })
-      .catch(error => {
-        console.error('Error submitting review:', error);
-        Alert.alert('Error submitting review. Please try again later.');
-      });
   };
 
   return (
@@ -118,7 +134,6 @@ const AboutUs = () => {
         <Text style={styles.subHeading}>Introduction</Text>
         <Text style={styles.paragraph}>
           Welcome to PetEmote, where we bring the world of emotions closer to your furry companions!
-          {/* Your introduction text goes here */}
         </Text>
 
         {/* Display Contact Information */}
@@ -162,13 +177,19 @@ const AboutUs = () => {
         <Text style={styles.paragraph}>
           Q: What is PetEmote?{'\n'}
           A: PetEmote is a revolutionary app that helps you understand your pet's emotions better.
-          {/* Add more FAQs and answers as needed */}
         </Text>
 
-        {/* Rating Option */}
-        
+        {/* Display Ratings and Reviews */}
+        <View style={styles.ratingContainer}>
+          <Text style={styles.subHeading}>Ratings</Text>
+          <Text>Total Rating Users: {totalRatingUsers}</Text>
+          <Text>Total Ratings: {totalRatings}</Text>
+          
+          <Text>Average Rating: {averageRating.toFixed(2)}</Text>
 
-        {/* Review Option */}
+        </View>
+
+        {/* Leave a Review */}
         <View style={styles.reviewContainer}>
           <Text style={styles.subHeading}>Leave a Review</Text>
           <View style={styles.starsContainer}>
@@ -193,14 +214,14 @@ const AboutUs = () => {
             onChangeText={text => setReviewText(text)}
             multiline
           />
-          <Button title="Submit Review" onPress={submitReview} />
+          <Button title="Submit Rating & Review" onPress={submitRatingAndReview} />
         </View>
 
         {/* Display existing reviews */}
         <View style={styles.reviewsContainer}>
           <Text style={styles.subHeading}>User Reviews</Text>
-          {reviews.map(review => (
-            <View key={review.id} style={styles.reviewItem}>
+          {reviews.map((review, index) => (
+            <View key={index} style={styles.reviewItem}>
               <Text style={styles.reviewRating}>{`${review.rating} stars`}</Text>
               <Text style={styles.reviewText}>{review.reviewText}</Text>
             </View>
@@ -270,7 +291,7 @@ const styles = StyleSheet.create({
   },
   ratingContainer: {
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: 'left',
   },
   starsContainer: {
     flexDirection: 'row',

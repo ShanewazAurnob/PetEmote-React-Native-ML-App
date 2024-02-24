@@ -8,19 +8,19 @@ import AppNavigator from './screens/AppNavigator';
 import AboutUs from './screens/AboutUs';
 import LoginScreen from './screens/LogIn';
 
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-       
         <Stack.Screen name="LogIn" component={LoginScreen} />
-        <Stack.Screen name="AppNav" component={AppNavigator}  options={{headerShown:false}}/>
-        <Stack.Screen name="AboutUs" component={AboutUs}  options={{headerShown:false}} />
-        <Stack.Screen name="SignUp" component={SignUp} options={{headerShown:false}}/>
-        <Stack.Screen name="Home" component={HomeScreen}  options={{headerShown:false}}/>
-        <Stack.Screen name="ViewPosts" component={ViewPosts}  options={{headerShown:false}}/>
+        <Stack.Screen name="AppNav" component={AppNavigator} options={{ headerShown: false }} />
+        <Stack.Screen name="AboutUs" component={AboutUs} options={{ headerShown: false }} />
+        <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ViewPosts" component={ViewPosts} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, TextInput, FlatList } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
-
 import { Ionicons } from '@expo/vector-icons';
 
 const FacebookPostScreen = () => {
@@ -13,6 +12,8 @@ const FacebookPostScreen = () => {
   const [expression, setExpression] = useState(null);
   const [posts, setPosts] = useState([]);
   const [showPosts, setShowPosts] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -27,6 +28,7 @@ const FacebookPostScreen = () => {
     if (camera) {
       const photo = await camera.takePictureAsync({ quality: 0.5 });
       setSelectedImage(photo.uri);
+      detectExpression(photo.uri);
     }
   };
 
@@ -40,10 +42,11 @@ const FacebookPostScreen = () => {
 
     if (!result.cancelled) {
       setSelectedImage(result.uri);
+      detectExpression(result.uri);
     }
   };
 
-  const detectExpression = async () => {
+  const detectExpression = async (imageUri) => {
     // Use a machine learning model to detect facial expressions from the selected image
     // For demonstration purposes, we'll simulate the expression detection with a random expression
     const expressions = ['Happy', 'Sad', 'Angry', 'Surprised', 'Neutral'];
@@ -84,23 +87,37 @@ const FacebookPostScreen = () => {
     });
   };
 
-  const handlePost = () => {
-    // Detect expression before posting
-    detectExpression();
+  const handleAddComment = (postId) => {
+    if (commentText.trim() === '') {
+      return; // Do not add empty comments
+    }
+    setPosts(prevPosts => {
+      return prevPosts.map(post => {
+        if (post.id === postId) {
+          return { ...post, comments: [...post.comments, commentText] };
+        }
+        return post;
+      });
+    });
+    setCommentText(''); // Clear the comment box after adding the comment
+  };
 
-    // Implement logic to post the selected image, detected expression, likes, comments, etc.
-    const newPost = {
-      id: `${Date.now()}`,
-      image: selectedImage,
-      expression: expression,
-      likes: 0,
-      dislikes: 0,
-      comments: [],
-    };
-    setPosts(prevPosts => [...prevPosts, newPost]);
-    setSelectedImage(null);
-    setExpression(null);
-    setShowPosts(true);
+  const handlePost = () => {
+    if (selectedImage) {
+      // Implement logic to post the selected image, detected expression, likes, comments, etc.
+      const newPost = {
+        id: `${Date.now()}`,
+        image: selectedImage,
+        expression: expression,
+        likes: 0,
+        dislikes: 0,
+        comments: [],
+      };
+      setPosts(prevPosts => [...prevPosts, newPost]);
+      setSelectedImage(null);
+      setExpression(null);
+      setShowPosts(true);
+    }
   };
 
   return (
@@ -117,32 +134,41 @@ const FacebookPostScreen = () => {
             style={styles.input}
           />
         </View>
-        {cameraPermission && (
+        {!selectedImage && !isCameraOpen && (
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => setIsCameraOpen(true)}>
+              <Ionicons name="camera" size={24} color="black" />
+              <Text style={styles.actionText}>Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={pickImageFromGallery}>
+              <Ionicons name="image" size={24} color="black" />
+              <Text style={styles.actionText}>Gallery</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handlePost}>
+              <Text style={styles.actionText}>Post</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {isCameraOpen && cameraPermission && (
           <Camera
             style={styles.camera}
             type={Camera.Constants.Type.back}
             ref={(ref) => setCamera(ref)}
-          />
+          >
+            <TouchableOpacity style={styles.takePictureButton} onPress={takePicture}>
+              <Ionicons name="camera" size={50} color="white" />
+            </TouchableOpacity>
+          </Camera>
         )}
         {selectedImage && (
           <View style={styles.imageContainer}>
             <Image source={{ uri: selectedImage }} style={styles.image} />
             <Text style={styles.expressionText}>Detected Expression: {expression}</Text>
+            <TouchableOpacity style={styles.postImageButton} onPress={handlePost}>
+              <Text style={styles.postImageButtonText}>Post</Text>
+            </TouchableOpacity>
           </View>
         )}
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.actionButton} onPress={takePicture}>
-            <Ionicons name="camera" size={24} color="black" />
-            <Text style={styles.actionText}>Photo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={pickImageFromGallery}>
-            <Ionicons name="image" size={24} color="black" />
-            <Text style={styles.actionText}>Gallery</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handlePost}>
-            <Text style={styles.actionText}>Post</Text>
-          </TouchableOpacity>
-        </View>
       </View>
       {showPosts && (
         <FlatList
@@ -153,16 +179,27 @@ const FacebookPostScreen = () => {
               <Text style={styles.expressionText}>Detected Expression: {item.expression}</Text>
               <View style={styles.interactionContainer}>
                 <TouchableOpacity style={styles.interactionButton} onPress={() => handleLike(item.id)}>
-                  <Text>Like ({item.likes})</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.interactionButton} onPress={() => handleComment(item.id, "Sample Comment")}>
-                  <Text>Comment</Text>
+                  <Ionicons name="thumbs-up" size={20} color="blue" />
+                  <Text style={styles.interactionButtonText}>Like ({item.likes})</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.interactionButton} onPress={() => handleDislike(item.id)}>
-                  <Text>Dislike ({item.dislikes})</Text>
+                  <Ionicons name="thumbs-down" size={20} color="red" />
+                  <Text style={styles.interactionButtonText}>Dislike ({item.dislikes})</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.commentsContainer}>
+                <TextInput
+                  placeholder="Write a comment..."
+                  value={commentText}
+                  onChangeText={setCommentText}
+                  style={styles.inputComment}
+                />
+                <TouchableOpacity
+                  style={styles.commentButton}
+                  onPress={() => handleAddComment(item.id)}
+                >
+                  <Text style={styles.commentButtonText}>Comment</Text>
+                </TouchableOpacity>
                 <Text style={styles.commentsTitle}>Comments:</Text>
                 {item.comments.map((comment, index) => (
                   <Text key={index} style={styles.comment}>{comment}</Text>
@@ -222,6 +259,11 @@ const styles = StyleSheet.create({
   camera: {
     height: 200,
     width: '100%',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  takePictureButton: {
+    marginBottom: 20,
   },
   imageContainer: {
     marginTop: 10,
@@ -263,11 +305,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   interactionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ccc',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
+  },
+  interactionButtonText: {
+    marginLeft: 5,
   },
   commentsContainer: {
     marginTop: 10,
@@ -279,6 +326,36 @@ const styles = StyleSheet.create({
   comment: {
     marginLeft: 10,
     marginBottom: 5,
+  },
+  inputComment: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    marginTop: 10,
+  },
+  commentButton: {
+    backgroundColor: '#4267B2',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  commentButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  postImageButton: {
+    backgroundColor: '#4267B2',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  postImageButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 
