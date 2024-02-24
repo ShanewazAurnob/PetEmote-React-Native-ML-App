@@ -1,37 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { collection, where, query, getDocs } from 'firebase/firestore';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
 import * as ImagePicker from 'expo-image-picker'; // Import ImagePicker
 import { FontAwesome } from '@expo/vector-icons';
+import { firestore, auth } from '../config';
 
-const ProfileScreen = () => {
-  const [userData, setUserData] = useState({
-    name: 'Shanewaz Aurnob',
-    email: 'aurnob.shanewaz@gmail.com',
-    password: '*********',
-    dateOfBirth: '',
-    joiningDate: '01/01/2020',
-    image: require('../assets/aa.jpg')
-  });
+const ProfileScreen = ({ navigation }) => {
+  const [userData, setUserData] = useState(null);
 
-  const [name, setName] = useState(userData.name);
-  const [email, setEmail] = useState(userData.email);
-  const [password, setPassword] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState(userData.dateOfBirth);
-  const [birthDate, setBirthDate] = useState(moment(new Date()).format('DD/MM/YYYY'));
-  const [birthDateModalStatus, setBirthDateModalStatus] = useState(false);
-
-  const handleUpdate = () => {
-    setUserData({
-      ...userData,
-      name: name,
-      email: email,
-      dateOfBirth: dateOfBirth
-    });
-
-    console.log('User data updated:', userData);
-  };
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const usersRef = collection(firestore, "users");
+        const q = query(usersRef, where("email", "==", auth.currentUser.email));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          const { userName, user_id, email, dp_url, birthday } = userData;
+          const loggedUserData = {
+            userRef: user_id,
+            email: email,
+            userName: userName,
+            userProfilePic: dp_url,
+            birthday: birthday
+          }
+          setUserData(loggedUserData);
+        })
+      }
+      catch (e) {
+        console.log(e);
+      }
+    }
+    fetchUserData();
+  }, []);
 
   const handleImagePick = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -48,67 +51,44 @@ const ProfileScreen = () => {
     });
 
     if (!result.cancelled) {
-      setUserData({ ...userData, image: result.uri });
+      setUserData({ ...userData, userProfilePic: result.uri });
     }
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={handleImagePick}>
-        <Image source={userData.image} style={styles.image} />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.changeImageButton} onPress={handleImagePick}>
-        <Text style={styles.changeImageText}>Change Image</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-      />
-
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-
-      <Text style={styles.label}>Change Password</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <Text style={styles.label}>Birth Date</Text>
-      <TouchableOpacity
-        style={styles.input}
-        onPress={() => setBirthDateModalStatus(true)}>
-        <Text>{birthDate}</Text>
-      </TouchableOpacity>
-      {birthDateModalStatus && (
-        <DateTimePicker
-          testID="dateTimePicker"
-          value={moment(birthDate, 'DD/MM/YYYY').toDate()}
-          mode="date"
-          onChange={(e, date) => {
-            const formattedDate = moment(date).format('DD/MM/YYYY');
-            setBirthDate(formattedDate);
-            setBirthDateModalStatus(false);
-          }}
-        />
+      <Text style={styles.title}>User Profile</Text>
+      {userData && (
+        <View style={styles.profileContainer}>
+          <TouchableOpacity onPress={handleImagePick}>
+            <Image source={{ uri: userData.userProfilePic }} style={styles.image} />
+          </TouchableOpacity>
+          <View style={styles.inputBox}>
+            <Text style={styles.label}>Name:</Text>
+            <TextInput
+              style={styles.textInput}
+              value={userData.userName}
+              editable={false}
+            />
+          </View>
+          <View style={styles.inputBox}>
+            <Text style={styles.label}>Email:</Text>
+            <TextInput
+              style={styles.textInput}
+              value={userData.email}
+              editable={false}
+            />
+          </View>
+          <View style={styles.inputBox}>
+            <Text style={styles.label}>BirthDay:</Text>
+            <TextInput
+              style={styles.textInput}
+              value={userData.birthday}
+              editable={false}
+            />
+          </View>
+        </View>
       )}
-
-      <Text style={styles.label}>Joining Date</Text>
-      <Text style={styles.input}>{userData.joiningDate}</Text>
-
-      <TouchableOpacity style={styles.button} onPress={handleUpdate}>
-        <Text style={styles.buttonText}>Update Profile</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -116,47 +96,45 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'left',
-    padding: 20
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
   },
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
     marginBottom: 20,
-  
   },
-  changeImageButton: {
-    marginBottom: 10,
+  profileContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
-  changeImageText: {
-    color: 'blue',
-    textDecorationLine: 'underline',
+  inputBox: {
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    width: '100%',
   },
   label: {
     fontWeight: 'bold',
-    marginBottom: 5
+    marginBottom: 5,
   },
-  input: {
+  textInput: {
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    marginBottom: 15,
-    width: '100%'
+    width: '100%',
   },
-  button: {
-    backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    width: '100%'
+  image: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    marginBottom: 20,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold'
-  }
 });
 
 export default ProfileScreen;
