@@ -107,7 +107,7 @@ export default function SignUp({ navigation }) {
       const docRef = await addDoc(usersRef, {
         "userName": userName,
         "email": email,
-        // "dp_url": "images/avatar.png",
+        "dp_url": "images/avatar.jpg",
         "joiningDate": Timestamp.fromDate(new Date()),
         'birthday': birthDate,
         "user_id": '' // This will be updated later

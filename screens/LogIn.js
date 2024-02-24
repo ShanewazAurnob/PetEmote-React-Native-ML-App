@@ -15,11 +15,13 @@ export default function LoginScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
 
+    
+
     const signIn = async () => {
         try {
             setLoading(true);
             setEmail(email.trim());
-
+    
             await signInWithEmailAndPassword(auth, email, password)
             .then(async (userCredential) => {
                 const user = userCredential.user;
@@ -34,7 +36,7 @@ export default function LoginScreen({ navigation }) {
                             userRef: user_id,
                             userEmail: email,
                             userName: userName,
-                            // userProfilePic: dp_url
+                             userProfilePic: dp_url
                         };
                         if (isRememberMeChecked) {
                             const loggedUserInfoString = JSON.stringify(loggedUserInfo);
@@ -71,6 +73,7 @@ export default function LoginScreen({ navigation }) {
             setLoading(false);
         }
     };
+    
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
