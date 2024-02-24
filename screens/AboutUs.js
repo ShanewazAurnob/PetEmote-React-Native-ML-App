@@ -1,16 +1,27 @@
-import React, { useId, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions, Linking, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Dimensions, Linking, TouchableOpacity, TextInput, Button, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import MapView, { Marker } from 'react-native-maps';
-import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome icons
+import { FontAwesome } from '@expo/vector-icons'; 
 import firebase from 'firebase/app';
 import { firestore } from '../config';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
-// import { firestore } from 'firebase/firestore';//////////////////////
+import { collection, doc, serverTimestamp, setDoc, getDocs, query, orderBy } from 'firebase/firestore';
 
 const AboutUs = () => {
   const [rating, setRating] = useState(0);
-  const randomId = useId();
+  const [reviewText, setReviewText] = useState('');
+  const [reviews, setReviews] = useState([]);
+
+  useEffect(() => {
+    // Fetch reviews from Firestore
+    const fetchReviews = async () => {
+      const reviewsSnapshot = await getDocs(query(collection(firestore, 'reviews'), orderBy('timestamp', 'desc')));
+      const reviewsData = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setReviews(reviewsData);
+    };
+
+    fetchReviews();
+  }, []);
 
   const openLink = (url) => {
     Linking.openURL(url);
@@ -18,7 +29,6 @@ const AboutUs = () => {
 
   const submitRating = () => {
     if (rating > 0) {
-      // const db = firebase.firestore();
       setDoc(doc(firestore, "appRatings", randomId), {
         rating: rating,
         timestamp: serverTimestamp(),
@@ -26,19 +36,47 @@ const AboutUs = () => {
       })
       .then(() => {
         console.log("Rating submitted successfully!");
-        // Show pop-up notification here
         alert(`Thank you for your rating! You rated our app ${rating} stars.`);
       })
       .catch((error) => {
         console.error("Error submitting rating: ", error);
-        // Show pop-up notification for error if needed
         alert('Error submitting rating. Please try again later.');
       });
     } else {
-      // Handle case where user didn't select any rating
-      // Show pop-up notification to prompt the user to select a rating
       alert('Please select a rating before submitting.');
     }
+  };
+
+  const submitReview = () => {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      return Alert.alert('Please sign in to leave a review.');
+    }
+
+    if (rating === 0) {
+      return Alert.alert('Please provide a rating.');
+    }
+
+    const review = {
+      userId: user.uid,
+      rating,
+      reviewText,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+
+    firebase.firestore().collection('reviews').add(review)
+      .then(() => {
+        Alert.alert('Thank you for your review!');
+        setRating(0);
+        setReviewText('');
+
+        // After submitting a review, fetch the updated list of reviews
+        fetchReviews();
+      })
+      .catch(error => {
+        console.error('Error submitting review:', error);
+        Alert.alert('Error submitting review. Please try again later.');
+      });
   };
 
   return (
@@ -128,8 +166,11 @@ const AboutUs = () => {
         </Text>
 
         {/* Rating Option */}
-        <View style={styles.ratingContainer}>
-          <Text style={styles.subHeading}>Rate Our App</Text>
+        
+
+        {/* Review Option */}
+        <View style={styles.reviewContainer}>
+          <Text style={styles.subHeading}>Leave a Review</Text>
           <View style={styles.starsContainer}>
             {[1, 2, 3, 4, 5].map((star, index) => (
               <TouchableOpacity 
@@ -138,16 +179,32 @@ const AboutUs = () => {
               >
                 <FontAwesome
                   name={star <= rating ? "star" : "star-o"}
-                  size={30}
+                  size={40}
                   color={star <= rating ? "#FFD700" : "#ccc"}
                   style={styles.starIcon}
                 />
               </TouchableOpacity>
             ))}
           </View>
-          <TouchableOpacity onPress={submitRating}>
-            <Text style={styles.submitButton}>Submit Rating</Text>
-          </TouchableOpacity>
+          <TextInput
+            style={styles.reviewInput}
+            placeholder="Write your review here..."
+            value={reviewText}
+            onChangeText={text => setReviewText(text)}
+            multiline
+          />
+          <Button title="Submit Review" onPress={submitReview} />
+        </View>
+
+        {/* Display existing reviews */}
+        <View style={styles.reviewsContainer}>
+          <Text style={styles.subHeading}>User Reviews</Text>
+          {reviews.map(review => (
+            <View key={review.id} style={styles.reviewItem}>
+              <Text style={styles.reviewRating}>{`${review.rating} stars`}</Text>
+              <Text style={styles.reviewText}>{review.reviewText}</Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </View>
@@ -219,13 +276,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   starIcon: {
-    marginHorizontal: 2,
+    marginHorizontal: 5,
   },
   submitButton: {
     marginTop: 10,
     fontSize: 18,
     color: '#007bff', // You can change the color to match your design
     textDecorationLine: 'underline',
+  },
+  reviewContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  reviewInput: {
+    height: 100,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginTop: 10,
+    padding: 10,
+    textAlignVertical: 'top',
+    width: '100%',
+  },
+  reviewsContainer: {
+    marginTop: 20,
+  },
+  reviewItem: {
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    paddingBottom: 10,
+  },
+  reviewRating: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  reviewText: {
+    fontSize: 14,
   },
 });
 

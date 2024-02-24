@@ -1,70 +1,114 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import moment from 'moment';
+import * as ImagePicker from 'expo-image-picker'; // Import ImagePicker
+import { FontAwesome } from '@expo/vector-icons';
 
-const ProfilePage = () => {
-  const [name, setName] = useState('Shanewaz Aurnob');
-  const [email, setEmail] = useState('aurnob101@gmail.com');
-  const [password, setPassword] = useState('********');
-  const [dob, setDob] = useState('2001-10-10');
-  const [joinDate, setJoinDate] = useState('2024-02-20');
-  const [isEditing, setIsEditing] = useState(false);
+const ProfileScreen = () => {
+  const [userData, setUserData] = useState({
+    name: 'Shanewaz Aurnob',
+    email: 'aurnob.shanewaz@gmail.com',
+    password: '*********',
+    dateOfBirth: '',
+    joiningDate: '01/01/2020',
+    image: require('../assets/aa.jpg')
+  });
 
-  const handleEdit = () => {
-    setIsEditing(!isEditing);
+  const [name, setName] = useState(userData.name);
+  const [email, setEmail] = useState(userData.email);
+  const [password, setPassword] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState(userData.dateOfBirth);
+  const [birthDate, setBirthDate] = useState(moment(new Date()).format('DD/MM/YYYY'));
+  const [birthDateModalStatus, setBirthDateModalStatus] = useState(false);
+
+  const handleUpdate = () => {
+    setUserData({
+      ...userData,
+      name: name,
+      email: email,
+      dateOfBirth: dateOfBirth
+    });
+
+    console.log('User data updated:', userData);
   };
 
-  const handleSave = () => {
-    // Here you can add logic to save the updated profile information
-    setIsEditing(false);
+  const handleImagePick = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.cancelled) {
+      setUserData({ ...userData, image: result.uri });
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Image
-        style={styles.profileImage}
-        source={{ uri: 'https://via.placeholder.com/150' }} // Placeholder image
-      />
-      <Text style={styles.label}>Name:</Text>
+      <TouchableOpacity onPress={handleImagePick}>
+        <Image source={userData.image} style={styles.image} />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.changeImageButton} onPress={handleImagePick}>
+        <Text style={styles.changeImageText}>Change Image</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.label}>Name</Text>
       <TextInput
         style={styles.input}
         value={name}
         onChangeText={setName}
-        editable={isEditing}
       />
-      <Text style={styles.label}>Email:</Text>
+
+      <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
         value={email}
         onChangeText={setEmail}
-        editable={isEditing}
+        keyboardType="email-address"
       />
-      <Text style={styles.label}>Password:</Text>
+
+      <Text style={styles.label}>Change Password</Text>
       <TextInput
         style={styles.input}
         value={password}
         onChangeText={setPassword}
-        editable={isEditing}
-        secureTextEntry={true}
+        secureTextEntry
       />
-      <Text style={styles.label}>Date of Birth:</Text>
-      <TextInput
+
+      <Text style={styles.label}>Birth Date</Text>
+      <TouchableOpacity
         style={styles.input}
-        value={dob}
-        onChangeText={setDob}
-        editable={isEditing}
-      />
-      <Text style={styles.label}>Joining Date:</Text>
-      <TextInput
-        style={styles.input}
-        value={joinDate}
-        onChangeText={setJoinDate}
-        editable={isEditing}
-      />
-      {isEditing ? (
-        <Button title="Save" onPress={handleSave} />
-      ) : (
-        <Button title="Edit" onPress={handleEdit} />
+        onPress={() => setBirthDateModalStatus(true)}>
+        <Text>{birthDate}</Text>
+      </TouchableOpacity>
+      {birthDateModalStatus && (
+        <DateTimePicker
+          testID="dateTimePicker"
+          value={moment(birthDate, 'DD/MM/YYYY').toDate()}
+          mode="date"
+          onChange={(e, date) => {
+            const formattedDate = moment(date).format('DD/MM/YYYY');
+            setBirthDate(formattedDate);
+            setBirthDateModalStatus(false);
+          }}
+        />
       )}
+
+      <Text style={styles.label}>Joining Date</Text>
+      <Text style={styles.input}>{userData.joiningDate}</Text>
+
+      <TouchableOpacity style={styles.button} onPress={handleUpdate}>
+        <Text style={styles.buttonText}>Update Profile</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -72,28 +116,47 @@ const ProfilePage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    alignItems: 'left',
+    padding: 20
   },
-  profileImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginBottom: 20,
-    alignSelf: 'center',
+  
+  },
+  changeImageButton: {
+    marginBottom: 10,
+  },
+  changeImageText: {
+    color: 'blue',
+    textDecorationLine: 'underline',
   },
   label: {
-    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 5
   },
   input: {
-    height: 40,
-    borderColor: 'gray',
+    backgroundColor: '#fff',
     borderWidth: 1,
+    borderColor: '#ccc',
     borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    padding: 10,
+    marginBottom: 15,
+    width: '100%'
   },
+  button: {
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: '100%'
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold'
+  }
 });
 
-export default ProfilePage;
+export default ProfileScreen;

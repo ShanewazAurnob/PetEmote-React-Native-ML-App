@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Modal, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, firestore } from '../config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Checkbox } from 'react-native-paper';
 
@@ -14,8 +14,6 @@ export default function LoginScreen({ navigation }) {
     const [errorMessage, setErrorMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
-    const [loggedInStatus, setLoggedInStatus] = useState(false);
-    const [welcomeUserName, setWelcomeUserName] = useState('');
 
     const signIn = async () => {
         try {
@@ -23,60 +21,54 @@ export default function LoginScreen({ navigation }) {
             setEmail(email.trim());
 
             await signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
+            .then(async (userCredential) => {
                 const user = userCredential.user;
-                intermediateSignUp(user);
-                navigation.replace('AppNav'); // Navigate to the home screen
+                if (user.emailVerified) {
+                    const usersRef = collection(firestore, "users");
+                    const q = query(usersRef, where("email", "==", email));
+                    const querySnapshot = await getDocs(q);
+                    querySnapshot.forEach((doc) => {
+                        const userData = doc.data();
+                        const { userName, user_id, email, dp_url } = userData;
+                        const loggedUserInfo = {
+                            userRef: user_id,
+                            userEmail: email,
+                            userName: userName,
+                            // userProfilePic: dp_url
+                        };
+                        if (isRememberMeChecked) {
+                            const loggedUserInfoString = JSON.stringify(loggedUserInfo);
+                            AsyncStorage.setItem('userData', loggedUserInfoString)
+                                .then(() => {
+                                    console.log('Data stored successfully!');
+                                })
+                                .catch((error) => {
+                                    console.log('Error storing data:', error);
+                                });
+                        }
+                        setEmail('');
+                        setPassword('');
+                        setLoading(false);
+                        navigation.replace('AppNav'); // Navigate to the home screen
+                    });
+                } else {
+                    Alert.alert("Please verify your email first.");
+                    setLoading(false);
+                }
             })
             .catch((e) => {
-                if(e.code==='auth/invalid-email') setErrorMessage("Invalid Email.")
-                if (e.code === 'auth/invalid-credential' || e.code ==='auth/invalid-login-credentials') setErrorMessage("Invalid Credentials");
-                if(e.code==='auth/too-many-requests') setErrorMessage("Please try again later.")
-                if (e.code === 'auth/user-not-found') setErrorMessage('No account matches this email');
+                if (e.code === 'auth/invalid-email') setErrorMessage("Invalid Email.");
+                else if (e.code === 'auth/invalid-credential' || e.code === 'auth/invalid-login-credentials') setErrorMessage("Invalid Credentials");
+                else if (e.code === 'auth/too-many-requests') setErrorMessage("Please try again later.");
+                else if (e.code === 'auth/user-not-found') setErrorMessage('No account matches this email');
                 else console.log(e);
                 setLoading(false);
             });
+        } catch (error) {
+            if (error.code === 'auth/invalid-credential') setErrorMessage("Wrong Password");
+            else if (error.code === 'auth/user-not-found') setErrorMessage('No account matches this email');
+            else console.log(error);
             setLoading(false);
-        } catch (e) {
-            if (e.code === 'auth/invalid-credential') setErrorMessage("Wrong Password");
-            if (e.code === 'auth/user-not-found') setErrorMessage('No account matches this email');
-            else console.log(e);
-            setLoading(false);
-        }
-    };
-
-    const intermediateSignUp = async (user) => {
-        if (user.emailVerified) {
-            const usersRef = collection(firestore, "users");
-            const q = query(usersRef, where("email", "==", email));
-            const querySnapshot = await getDocs(q);
-            querySnapshot.forEach((doc) => {
-                const userData = doc.data();
-                const { userName, user_id, email, dp_url } = userData;
-                const loggedUserInfo = {
-                    userRef: user_id,
-                    userEmail: email,
-                    userName: userName,
-                    userProfilePic: dp_url
-                };
-                setWelcomeUserName(userName);
-                if (isRememberMeChecked == true) {
-                    const loggedUserInfoString = JSON.stringify(loggedUserInfo);
-                    AsyncStorage.setItem('userData', loggedUserInfoString)
-                        .then(() => {
-                            console.log('Data stored successfully!');
-                        })
-                        .catch((error) => {
-                            console.log('Error storing data:', error);
-                        });
-                }
-                setEmail('');
-                setPassword('');
-                setLoading(false);
-                setLoggedInStatus(true);
-            });
-        } else {
-            alert("Please verify your email first.");
         }
     };
 
@@ -107,7 +99,6 @@ export default function LoginScreen({ navigation }) {
                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                     <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={24} color="#aaaaaa" />
                         </TouchableOpacity>
-
             </View>
             <View style={styles.checkboxContainer}>
                 <Checkbox
@@ -120,7 +111,7 @@ export default function LoginScreen({ navigation }) {
             </View>
             {errorMessage.length > 0 && <Text style={styles.errorMessage}>*{errorMessage}*</Text>}
             <TouchableOpacity
-                disabled={password.length == 0 || email.length == 0}
+                disabled={password.length === 0 || email.length === 0}
                 style={styles.button}
                 onPress={signIn}>
                 <Text style={styles.buttonTitle}>
@@ -135,31 +126,8 @@ export default function LoginScreen({ navigation }) {
                     navigation.navigate('SignUp')
                 }} style={styles.footerLink}>Sign up</Text></Text>
             </View>
-            <Modal
-                visible={loggedInStatus}
-                animationType="fade"
-                transparent={true}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Ionicons name="md-person" size={64} color="#e80505" />
-                        <Text style={styles.welcomeText}>
-                            Welcome, <Text style={styles.usernameText}>{welcomeUserName}</Text>
-                        </Text>
-                        <TouchableOpacity style={styles.cancelButton}
-                            onPress={() => {
-                                setLoggedInStatus(false);
-                                navigation.replace('Home');
-                            }}
-                        >
-                            <Text style={styles.cancelButtonText}>Enter the Area 51</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
         </ScrollView>
-
-    )
+    );
 }
 
 const styles = StyleSheet.create({
@@ -225,36 +193,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#e80505',
         marginLeft: 5,
-    },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
-        alignItems: 'center',
-    },
-    welcomeText: {
-        fontSize: 20,
-        marginBottom: 10,
-    },
-    usernameText: {
-        fontWeight: 'bold',
-    },
-    cancelButton: {
-        backgroundColor: '#007bff',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 5,
-        marginTop: 20,
-    },
-    cancelButtonText: {
-        color: 'white',
-        textAlign: 'center',
     },
     checkboxContainer: {
         flexDirection: 'row',

@@ -25,7 +25,7 @@ const SettingsScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: darkModeEnabled ? '#121212' : '#ffffff' }]}>
-      <Text style={[styles.title, { color: darkModeEnabled ? '#ffffff' : '#000000' }]}>Settings</Text>
+      <Text style={[styles.title, { color: darkModeEnabled ? '#ffffff' : '#000000' }]}></Text>
 
       {/* Dark Mode Toggle */}
       <View style={[styles.setting, { borderColor: darkModeEnabled ? '#ffffff' : '#000000' }]}>
@@ -76,6 +76,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flexDirection: 'row',
+    
     alignItems: 'center',
     backgroundColor: '#0066cc',
     paddingVertical: 15,
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
   },
   buttonTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    
     marginLeft: 10,
   },
 });

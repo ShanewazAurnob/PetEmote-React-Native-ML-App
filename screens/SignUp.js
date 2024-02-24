@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { auth, db } from '../config';
+import { auth, firestore } from '../config';
 import { Timestamp, addDoc, collection, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
@@ -62,7 +62,7 @@ export default function SignUp({ navigation }) {
           return;
         }
         try {
-          const userRef = collection(db, "users");
+          const userRef = collection(firestore, "users");
           const q = query(userRef, where('email', '==', email));
           const querySnapshot = await getDocs(q);
           if (querySnapshot.size == 0) {
@@ -88,7 +88,7 @@ export default function SignUp({ navigation }) {
     const checkUniqueUserName = async () => {
       if (userName != '') {
         try {
-          const userRef = collection(db, "users");
+          const userRef = collection(firestore, "users");
           const q = query(userRef, where('userName', '==', userName));
           const querySnapshot = await getDocs(q);
           if (querySnapshot.size == 0) setUserNameErrorMessage(userNameMessages[0]);
@@ -102,22 +102,24 @@ export default function SignUp({ navigation }) {
   }, [userName]);
 
   const doFireBaseUpdate = async () => {
-    const usersRef = collection(db, 'users');
+    const usersRef = collection(firestore, 'users');
     try {
       const docRef = await addDoc(usersRef, {
         "userName": userName,
         "email": email,
-        "dp_url": "images/avatar.png",
+        // "dp_url": "images/avatar.png",
         "joiningDate": Timestamp.fromDate(new Date()),
         'birthday': birthDate,
-        "user_id": ''
+        "user_id": '' // This will be updated later
       });
-
-      updateDoc(doc(db, "users", docRef.id), { "user_id": docRef.id });
+  
+      // Chain the update operation after the document is added
+      updateDoc(docRef, { "user_id": docRef.id }); // No need for 'await' here
     } catch (e) {
       console.log(e);
     }
   };
+  
 
   const registerWithEmail = async () => {
     try {

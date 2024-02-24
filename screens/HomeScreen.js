@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, TextInput, FlatList } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
+
 import { Ionicons } from '@expo/vector-icons';
 
 const FacebookPostScreen = () => {
@@ -15,7 +16,7 @@ const FacebookPostScreen = () => {
 
   useEffect(() => {
     (async () => {
-      const cameraPermission = await Camera.requestPermissionsAsync();
+      const cameraPermission = await Camera.requestCameraPermissionsAsync();
       const galleryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       setCameraPermission(cameraPermission.status === 'granted');
       setGalleryPermission(galleryPermission.status === 'granted');
@@ -105,10 +106,7 @@ const FacebookPostScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Create a post</Text>
-        <TouchableOpacity style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="black" />
-        </TouchableOpacity>
+        <Text style={styles.headerText}>Detect and Create a post</Text>
       </View>
       <View style={styles.postContainer}>
         <View style={styles.inputContainer}>
@@ -119,6 +117,13 @@ const FacebookPostScreen = () => {
             style={styles.input}
           />
         </View>
+        {cameraPermission && (
+          <Camera
+            style={styles.camera}
+            type={Camera.Constants.Type.back}
+            ref={(ref) => setCamera(ref)}
+          />
+        )}
         {selectedImage && (
           <View style={styles.imageContainer}>
             <Image source={{ uri: selectedImage }} style={styles.image} />
@@ -135,7 +140,6 @@ const FacebookPostScreen = () => {
             <Text style={styles.actionText}>Gallery</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handlePost}>
-            <Ionicons name="ios-arrow-forward" size={24} color="black" />
             <Text style={styles.actionText}>Post</Text>
           </TouchableOpacity>
         </View>
@@ -190,9 +194,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  closeButton: {
-    padding: 5,
-  },
   postContainer: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -217,6 +218,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
+  },
+  camera: {
+    height: 200,
+    width: '100%',
   },
   imageContainer: {
     marginTop: 10,
