@@ -8,6 +8,7 @@ import { firestore } from '../config';
 import { collection, doc, serverTimestamp, setDoc, getDocs, query, orderBy, limit, aggregate } from 'firebase/firestore';
 import 'firebase/auth';
 import { getAuth } from 'firebase/auth';
+import * as Location from 'expo-location'; 
 
 const AboutUs = () => {
   const [rating, setRating] = useState(0);
@@ -16,15 +17,16 @@ const AboutUs = () => {
   const [averageRating, setAverageRating] = useState(0);
   const [totalRatings, setTotalRatings] = useState(0);
   const [totalRatingUsers, setTotalRatingUsers] = useState(0);
+  const [userLocation, setUserLocation] = useState(null); // State to hold user's current location
 
   useEffect(() => {
     const fetchRatingsAndReviews = async () => {
       try {
-        // Fetch last 2 reviews
+        
         const reviewsSnapshot = await getDocs(query(collection(firestore, 'reviews'), orderBy('timestamp', 'desc'), limit(2)));
         const reviewsData = reviewsSnapshot.docs.map(doc => doc.data());
 
-        // Calculate total ratings, average rating, and total rating users
+        
         const ratingsSnapshot = await getDocs(collection(firestore, 'appRatings'));
         let totalRatings = 0;
         let ratingCount = 0;
@@ -44,11 +46,23 @@ const AboutUs = () => {
         setTotalRatingUsers(uniqueUsers.size);
       } catch (error) {
         console.error('Error fetching reviews:', error);
-        // Handle error
+        
       }
     };
 
     fetchRatingsAndReviews();
+
+    // Fetch user's current location
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.error('Permission to access location was denied');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setUserLocation(location.coords);
+    })();
   }, []);
 
   const openLink = (url) => {
@@ -73,10 +87,10 @@ const AboutUs = () => {
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       };
     
-      // Add the review to Firestore
+      
       await firestore.collection('reviews').add(review);
       
-      // Add the rating to Firestore with the user's ID as the document ID
+      
       await setDoc(doc(firestore, "appRatings", user.uid), {
         rating: rating,
         userId: user.uid,
@@ -87,7 +101,7 @@ const AboutUs = () => {
       setRating(0);
       setReviewText('');
     
-      // After submitting a review and rating, fetch the updated list of reviews and ratings
+      
       fetchRatingsAndReviews();
     } catch (error) {
       console.error('Error submitting review and rating:', error);
@@ -112,22 +126,23 @@ const AboutUs = () => {
 
         {/* Display Location on Map */}
         <View style={styles.mapContainer}>
-          <Text style={styles.subHeading}>Head Office Location</Text>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: 22.4716,
-              longitude: 91.7877,
-              latitudeDelta: 0.05,
-              longitudeDelta: 0.05,
-            }}
-          >
-            <Marker
-              coordinate={{ latitude: 22.4716, longitude: 91.7877 }}
-              title="PetEmote"
-              description="Head Office"
-            />
-          </MapView>
+          <Text style={styles.subHeading}>Location</Text>
+          {userLocation && (
+            <MapView
+              style={styles.map}
+              region={{
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05,
+              }}
+            >
+              <Marker
+                coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}
+                title="Current Location"
+              />
+            </MapView>
+          )}
         </View>
 
         {/* Display Introduction */}
@@ -242,7 +257,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#e80505', // Changed color to a different color
+    color: '#e80505', 
     paddingTop: 30,
   },
   videoContainer: {
@@ -302,7 +317,7 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: 10,
     fontSize: 18,
-    color: '#007bff', // You can change the color to match your design
+    color: '#007bff', 
     textDecorationLine: 'underline',
   },
   reviewContainer: {

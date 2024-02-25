@@ -3,6 +3,7 @@ import { getAuth } from "firebase/auth";
 
 import { getFirestore } from "firebase/firestore";
 
+
 const firebaseConfig = {
     apiKey: "AIzaSyA_eVMhVLM7hEKxIKKrT_d8uE7v0hACPWg",
     authDomain: "petemotes-25000.firebaseapp.com",

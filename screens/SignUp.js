@@ -9,6 +9,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { gsap, Back } from 'gsap-rn';
 import { Ionicons } from '@expo/vector-icons';
 
+
 export default function SignUp({ navigation }) {
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
@@ -184,7 +185,7 @@ export default function SignUp({ navigation }) {
         {userNameErrorMessage[0].length > 0 && userName.length > 0 && <Text style={{ color: userNameErrorMessage[1], paddingLeft: 20, fontSize: 13 }}>*{userNameErrorMessage[0]}*</Text>}
         <TextInput
           style={styles.input}
-          placeholder='E-mail'
+          placeholder='Email'
           placeholderTextColor="#aaaaaa"
           onChangeText={(text) => { setEmail(text); setErrorMessage(''); }}
           value={email}
@@ -343,13 +344,13 @@ const styles = StyleSheet.create({
   },
   passwordContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center',     
     borderColor: 'gray',
     width: '100%',
     position: 'relative'
   },
   passwordInput: {
-    flex: 1,
+    flex: 1,  
     height: 40,
     paddingHorizontal: 10,
   },

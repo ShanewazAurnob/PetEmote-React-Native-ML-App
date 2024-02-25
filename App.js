@@ -9,6 +9,7 @@ import AboutUs from './screens/AboutUs';
 import LoginScreen from './screens/LogIn';
 
 
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
