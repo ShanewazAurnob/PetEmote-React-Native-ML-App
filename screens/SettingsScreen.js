@@ -22,6 +22,7 @@ const SettingsScreen = ({ navigation }) => {
   const onSignOutPress = async () => {
     try {
         await AsyncStorage.removeItem('userData'); // Clear user data from AsyncStorage
+        await auth.signOut()
         // await auth.signOut(); // Sign out the user
         navigation.replace('LogIn'); // Navigate back to the login screen or wherever appropriate
     } catch (error) {

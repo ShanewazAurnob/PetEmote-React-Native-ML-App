@@ -87,7 +87,10 @@ const ProfileScreen = ({ navigation }) => {
   const preFetchDP = (userProfilePic)=>{
     const imageRef = getImageUrlToShow(userProfilePic)
     setImageUri(imageRef)
+    setnewImageUri(imageRef)
   }
+
+  // console.log(imageUri)
   
   useEffect(() => {
     const getUser = async () => {
@@ -96,6 +99,7 @@ const ProfileScreen = ({ navigation }) => {
         const user = JSON.parse(userData);
         setUserData(user)
         preFetchDP(user.userProfilePic)
+        // console.log(user.userProfilePic)
       }
       else{
         const usersRef = collection(firestore, "users");
@@ -103,21 +107,27 @@ const ProfileScreen = ({ navigation }) => {
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
             const userData = doc.data();
-            const { userName, user_id, email, dp_url } = userData;
+            const { userName, user_id, email, dp_url,birthday } = userData;
             const loggedUserInfo = {
                 userRef: user_id,
                 userEmail: email,
                 userName: userName,
-                userProfilePic: dp_url
+                userProfilePic: dp_url,
+                birthday
             };
             setUserData(loggedUserInfo)
-            preFetchDP(loggedUserInfo.userProfilePic)
+            preFetchDP(dp_url)
           }
         );
       }
     }
     getUser()
   }, [])
+
+  useEffect(() => {
+    if(userData) preFetchDP(userData.userProfilePic)
+  }, [userData])
+  
   
   return (
     <View style={styles.container}>

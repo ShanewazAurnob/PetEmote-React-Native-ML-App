@@ -115,6 +115,11 @@ const AboutUs = () => {
     }
     getUser()
   }, [])
+
+  useEffect(() => {
+    fetchRatingsAndReviews()
+  }, [user])
+  
   
 
   const submitRatingAndReview = async () => {

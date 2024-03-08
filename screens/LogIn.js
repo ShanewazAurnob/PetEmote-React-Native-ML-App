@@ -10,7 +10,7 @@ import { Checkbox } from 'react-native-paper';
 export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false); // Added state to manage password visibility
+    const [showPassword, setShowPassword] = useState(false); 
     const [errorMessage, setErrorMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
