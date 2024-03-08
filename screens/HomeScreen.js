@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, Image, StyleSheet, TextInput, FlatList } 
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const FacebookPostScreen = () => {
+
+const PostScreen = () => {
   const [cameraPermission, setCameraPermission] = useState(null);
   const [galleryPermission, setGalleryPermission] = useState(null);
   const [camera, setCamera] = useState(null);
@@ -36,8 +38,9 @@ const FacebookPostScreen = () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [3, 4],
       quality: 1,
+      
     });
 
     if (!result.cancelled) {
@@ -359,4 +362,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FacebookPostScreen;
+export default PostScreen;

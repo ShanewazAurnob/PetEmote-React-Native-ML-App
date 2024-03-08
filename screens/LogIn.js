@@ -31,21 +31,22 @@ export default function LoginScreen({ navigation }) {
                     const querySnapshot = await getDocs(q);
                     querySnapshot.forEach((doc) => {
                         const userData = doc.data();
-                        const { userName, user_id, email, dp_url } = userData;
+                        const { userName, user_id, email, dp_url,birthday } = userData;
                         const loggedUserInfo = {
                             userRef: user_id,
                             userEmail: email,
                             userName: userName,
-                             userProfilePic: dp_url
+                            userProfilePic: dp_url,
+                            birthday:birthday
                         };
                         if (isRememberMeChecked) {
                             const loggedUserInfoString = JSON.stringify(loggedUserInfo);
                             AsyncStorage.setItem('userData', loggedUserInfoString)
                                 .then(() => {
-                                    console.log('Data stored successfully!');
+                                    // console.log('Data stored successfully!');
                                 })
                                 .catch((error) => {
-                                    console.log('Error storing data:', error);
+                                    // console.log('Error storing data:', error);
                                 });
                         }
                         setEmail('');
@@ -73,6 +74,22 @@ export default function LoginScreen({ navigation }) {
             setLoading(false);
         }
     };
+
+
+    useEffect(() => {
+        const checkLoggedIn = async () => {
+            const userData = await AsyncStorage.getItem('userData');
+            if (userData) {
+              const parsedUserData = JSON.parse(userData);
+              navigation.replace('AppNav')
+            } else {
+              // User data doesn't exist, show login screen
+              // or redirect to the login page
+            }
+          };
+          checkLoggedIn()
+    }, [])
+
     
 
     return (
@@ -83,7 +100,7 @@ export default function LoginScreen({ navigation }) {
             />
             <TextInput
                 style={styles.input}
-                placeholder='E-mail'
+                placeholder='Email'
                 placeholderTextColor="#aaaaaa"
                 onChangeText={(text) => { setEmail(text); setErrorMessage(''); }}
                 value={email}

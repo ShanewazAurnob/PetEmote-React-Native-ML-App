@@ -4,55 +4,63 @@ import { WebView } from 'react-native-webview';
 import MapView, { Marker } from 'react-native-maps';
 import { FontAwesome } from '@expo/vector-icons'; 
 import firebase from 'firebase/app';
-import { firestore } from '../config';
-import { collection, doc, serverTimestamp, setDoc, getDocs, query, orderBy, limit, aggregate } from 'firebase/firestore';
+import { auth, firestore } from '../config';
+import { collection, doc, serverTimestamp, setDoc, getDocs, query, orderBy, limit, aggregate, addDoc, where, updateDoc } from 'firebase/firestore';
 import 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import * as Location from 'expo-location'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AboutUs = () => {
+  const [user, setuser] = useState({})
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
   const [totalRatings, setTotalRatings] = useState(0);
   const [totalRatingUsers, setTotalRatingUsers] = useState(0);
-  const [userLocation, setUserLocation] = useState(null); // State to hold user's current location
+  const [userLocation, setUserLocation] = useState(null); 
+  const [userAlreadyReviewed, setuserAlreadyReviewed] = useState(false)
+  const [userReviewDoc, setuserReviewDoc] = useState('')
+
+
+  const fetchRatingsAndReviews = async () => {
+    try {
+      
+      const reviewsSnapshot = await getDocs(query(collection(firestore, 'reviews'), orderBy('timestamp', 'desc')));
+
+      const reviewsData = reviewsSnapshot.docs.map(doc => {
+        const newDoc = doc.data()
+        newDoc.id = doc.id
+        return newDoc
+      });
+      
+      let totalRatings = 0;
+      reviewsData.forEach((item) => {
+        totalRatings += item.rating;
+        if(item.userId==user.userRef){
+          setuserAlreadyReviewed(true)
+          setRating(item.rating)
+          setReviewText(item.reviewText)
+          setuserReviewDoc(item.id)
+        }
+      });
+      const averageRating = reviewsData.length > 0 ?( totalRatings / reviewsData.length) : 0;
+
+      // Update state
+      setReviews(reviewsData);
+      setTotalRatings(totalRatings);
+      setAverageRating(averageRating);
+      setTotalRatingUsers(reviewsData.length)
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchRatingsAndReviews = async () => {
-      try {
-        
-        const reviewsSnapshot = await getDocs(query(collection(firestore, 'reviews'), orderBy('timestamp', 'desc'), limit(2)));
-        const reviewsData = reviewsSnapshot.docs.map(doc => doc.data());
-
-        
-        const ratingsSnapshot = await getDocs(collection(firestore, 'appRatings'));
-        let totalRatings = 0;
-        let ratingCount = 0;
-        let uniqueUsers = new Set();
-        ratingsSnapshot.docs.forEach(doc => {
-          const ratingData = doc.data();
-          totalRatings += ratingData.rating;
-          ratingCount++;
-          uniqueUsers.add(ratingData.userId);
-        });
-        const averageRating = ratingCount > 0 ? totalRatings / ratingCount : 0;
-
-        // Update state
-        setReviews(reviewsData);
-        setTotalRatings(totalRatings);
-        setAverageRating(averageRating);
-        setTotalRatingUsers(uniqueUsers.size);
-      } catch (error) {
-        console.error('Error fetching reviews:', error);
-        
-      }
-    };
 
     fetchRatingsAndReviews();
 
-    // Fetch user's current location
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -65,43 +73,68 @@ const AboutUs = () => {
     })();
   }, []);
 
+
+  const reviewedStar = (star)=>{
+    const starTag = []
+    for(let i=0;i<star;i++){
+      starTag.push(i+1)
+    }
+    return starTag
+
+  }
+
   const openLink = (url) => {
     Linking.openURL(url);
   };
 
+  useEffect(() => {
+    const getUser = async () => {
+      const userData = await AsyncStorage.getItem('userData');
+      if(userData){
+        const user = JSON.parse(userData);
+        setuser(user)
+      }
+      else{
+        const usersRef = collection(firestore, "users");
+        const q = query(usersRef, where("email", "==", auth.currentUser.email));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+            const userData = doc.data();
+            // console.log(userData)
+            const { userName, user_id, email, dp_url } = userData;
+            const loggedUserInfo = {
+                userRef: user_id,
+                userEmail: email,
+                userName: userName,
+                  userProfilePic: dp_url
+            };
+            setuser(loggedUserInfo)
+          }
+        );
+      }
+    }
+    getUser()
+  }, [])
+  
+
   const submitRatingAndReview = async () => {
     try {
-      const user = firebase.auth().currentUser;
-      if (!user) {
-        return Alert.alert('Please sign in to leave a review.');
-      }
-    
-      if (rating === 0) {
-        return Alert.alert('Please provide a rating.');
-      }
-    
       const review = {
-        userId: user.uid,
-        rating,
-        reviewText,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      };
-    
-      
-      await firestore.collection('reviews').add(review);
-      
-      
-      await setDoc(doc(firestore, "appRatings", user.uid), {
+        userId: user.userRef,
+        userName: user.userName,
         rating: rating,
-        userId: user.uid,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-
-      Alert.alert('Thank you for your review and rating!');
-      setRating(0);
-      setReviewText('');
-    
-      
+        reviewText,
+        timestamp: new Date(),
+      };
+      const reviewColRef = collection(firestore,'reviews')
+      if(!userAlreadyReviewed){
+        const docRef = await addDoc(reviewColRef,review);
+        Alert.alert('Thank you for your review and rating!');
+      }
+      else{
+        const updatedDoc = await updateDoc(doc(firestore,'reviews',userReviewDoc), review)
+        Alert.alert("Thank you. Your Review has been updated!")
+      }
       fetchRatingsAndReviews();
     } catch (error) {
       console.error('Error submitting review and rating:', error);
@@ -229,18 +262,26 @@ const AboutUs = () => {
             onChangeText={text => setReviewText(text)}
             multiline
           />
-          <Button title="Submit Rating & Review" onPress={submitRatingAndReview} />
+          <Button title={(userAlreadyReviewed ?"Update " : "Submit ") + "Rating & Review"} onPress={submitRatingAndReview} />
         </View>
 
         {/* Display existing reviews */}
         <View style={styles.reviewsContainer}>
-          <Text style={styles.subHeading}>User Reviews</Text>
-          {reviews.map((review, index) => (
+          <Text style={styles.subHeading}>Latest User Reviews</Text>
+          {}
+          {reviews.map((review, index) => {
+            if(index>1) return;
+            return (
             <View key={index} style={styles.reviewItem}>
-              <Text style={styles.reviewRating}>{`${review.rating} stars`}</Text>
+              <Text style={[styles.reviewRating, {fontSize:18,color:'#24e225'}]}>{review.userName}</Text>
+              {/* <Text style={styles.reviewRating}>{`${review.rating} stars`}</Text> */}
+              <View style={[styles.starsContainer]}>
+                {reviewedStar(review.rating).map((item)=> ( <FontAwesome key={item} name={"star"} size={15} color={"#FFD700"} style={{marginRight:2}} />))}
+                {reviewedStar(5-review.rating).map((item)=> ( <FontAwesome key={item} name={"star-o"} size={15} color={"#FFD700"} style={{marginRight:2}} />))}
+                </View>
               <Text style={styles.reviewText}>{review.reviewText}</Text>
             </View>
-          ))}
+          )})}
         </View>
       </ScrollView>
     </View>
