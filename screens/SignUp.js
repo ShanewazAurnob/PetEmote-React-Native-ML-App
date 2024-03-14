@@ -115,7 +115,7 @@ export default function SignUp({ navigation }) {
       });
   
       // Chain the update operation after the document is added
-      updateDoc(docRef, { "user_id": docRef.id }); // No need for 'await' here
+      updateDoc(docRef, { "user_id": docRef.id }); 
     } catch (e) {
       console.log(e);
     }

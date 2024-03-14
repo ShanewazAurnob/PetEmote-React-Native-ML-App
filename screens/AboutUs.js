@@ -272,13 +272,13 @@ const AboutUs = () => {
 
         {/* Display existing reviews */}
         <View style={styles.reviewsContainer}>
-          <Text style={styles.subHeading}>Latest User Reviews</Text>
+          <Text style={styles.subHeading}>User Reviews</Text>
           {}
           {reviews.map((review, index) => {
-            if(index>1) return;
+            if(index>2) return;
             return (
             <View key={index} style={styles.reviewItem}>
-              <Text style={[styles.reviewRating, {fontSize:18,color:'#24e225'}]}>{review.userName}</Text>
+              <Text style={[styles.reviewRating, {fontSize:18,color:'red'}]}>{review.userName}</Text>
               {/* <Text style={styles.reviewRating}>{`${review.rating} stars`}</Text> */}
               <View style={[styles.starsContainer]}>
                 {reviewedStar(review.rating).map((item)=> ( <FontAwesome key={item} name={"star"} size={15} color={"#FFD700"} style={{marginRight:2}} />))}

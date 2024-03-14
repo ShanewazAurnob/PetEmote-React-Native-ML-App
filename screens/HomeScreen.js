@@ -3,8 +3,9 @@ import { View, Text, TouchableOpacity, Image, StyleSheet, TextInput, FlatList } 
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, increment, decrement, arrayUnion, arrayRemove, getDoc, onSnapshot } from 'firebase/firestore'; // Import Firestore methods
+import { firestore } from '../config'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 
 const PostScreen = () => {
   const [cameraPermission, setCameraPermission] = useState(null);
@@ -13,9 +14,18 @@ const PostScreen = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [expression, setExpression] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [showPosts, setShowPosts] = useState(false);
-  const [commentText, setCommentText] = useState('');
+  const [postText, setPostText] = useState('');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [showPosts, setShowPosts] = useState(false); 
+  const [commentText, setCommentText] = useState('');
+  const [userData, setUserData] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [imageUri, setImageUri] = useState(null);
+  const [user, setuser] = useState({})
+
+  const [newImageUri, setnewImageUri] = useState(null)
+
+  const storageUrl = 'petemotes-25000.appspot.com';
 
   useEffect(() => {
     (async () => {
@@ -25,6 +35,75 @@ const PostScreen = () => {
       setGalleryPermission(galleryPermission.status === 'granted');
     })();
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(firestore, 'posts'), (snapshot) => {
+      const postsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      postsData.sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+          return b.createdAt.toMillis() - a.createdAt.toMillis();
+        } else if (a.createdAt) {
+          return -1;
+        } else if (b.createdAt) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+      setPosts(postsData);
+    });
+    setShowPosts(true);
+    return () => unsubscribe();
+  }, []);
+
+  const getImageUrlToShow = (image) => {
+    const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(image)}?alt=media`;
+    return imageUrl
+  }
+
+  const preFetchDP = (userProfilePic) => {
+    const imageRef = getImageUrlToShow(userProfilePic)
+    setImageUri(imageRef)
+    setnewImageUri(imageRef)
+  }
+
+  useEffect(() => {
+    const getUser = async () => {
+      const userData = await AsyncStorage.getItem('userData');
+      if(userData){
+        const user = JSON.parse(userData);
+        setUserData(user)
+        preFetchDP(user.userProfilePic)
+      }
+      else{
+        const usersRef = collection(firestore, "users");
+        const q = query(usersRef, where("email", "==", auth.currentUser.email));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+            const userData = doc.data();
+            const { userName, user_id, email, dp_url,birthday } = userData;
+            const loggedUserInfo = {
+                userRef: user_id,
+                userEmail: email,
+                userName: userName,
+                userProfilePic: dp_url,
+                birthday
+            };
+            setUserData(loggedUserInfo)
+            preFetchDP(dp_url)
+          }
+        );
+      }
+    }
+    getUser()
+  }, [])
+
+  useEffect(() => {
+    if(userData) preFetchDP(userData.userProfilePic)
+  }, [userData])
 
   const takePicture = async () => {
     if (camera) {
@@ -40,7 +119,6 @@ const PostScreen = () => {
       allowsEditing: true,
       aspect: [3, 4],
       quality: 1,
-      
     });
 
     if (!result.cancelled) {
@@ -50,78 +128,104 @@ const PostScreen = () => {
   };
 
   const detectExpression = async (imageUri) => {
-    // Use a machine learning model to detect facial expressions from the selected image
-    // For demonstration purposes, we'll simulate the expression detection with a random expression
     const expressions = ['Happy', 'Sad', 'Angry', 'Surprised', 'Neutral'];
     const detectedExpression = expressions[Math.floor(Math.random() * expressions.length)];
     setExpression(detectedExpression);
   };
 
-  const handleLike = (postId) => {
-    setPosts(prevPosts => {
-      return prevPosts.map(post => {
-        if (post.id === postId) {
-          return { ...post, likes: post.likes + 1 };
-        }
-        return post;
+  const handleLike = async (postId) => {
+    try {
+      const postRef = doc(firestore, 'posts', postId);
+      const postSnapshot = await getDoc(postRef);
+      const postData = postSnapshot.data();
+      
+      if (postData.dislikedBy && postData.dislikedBy.includes(currentUserId)) {
+        await updateDoc(postRef, {
+          dislikes: decrement(1),
+          dislikedBy: arrayRemove(currentUserId)
+        });
+      }
+      
+      await updateDoc(postRef, {
+        likes: increment(1),
+        likedBy: arrayUnion(currentUserId)
       });
-    });
+      
+      console.log('Post liked with ID: ', postId);
+    } catch (error) {
+      console.error('Error liking post: ', error);
+    }
   };
 
-  const handleComment = (postId, comment) => {
-    setPosts(prevPosts => {
-      return prevPosts.map(post => {
-        if (post.id === postId) {
-          return { ...post, comments: [...post.comments, comment] };
-        }
-        return post;
+  const handleDislike = async (postId) => {
+    try {
+      const postRef = doc(firestore, 'posts', postId);
+      const postSnapshot = await getDoc(postRef);
+      const postData = postSnapshot.data();
+      
+      if (postData.likedBy && postData.likedBy.includes(currentUserId)) {
+        await updateDoc(postRef, {
+          likes: postData.likes - 1, // Manually decrease likes by 1
+          likedBy: arrayRemove(currentUserId)
+        });
+      }
+      
+      await updateDoc(postRef, {
+        dislikes: postData.dislikes + 1, // Manually increase dislikes by 1
+        dislikedBy: arrayUnion(currentUserId)
       });
-    });
+      
+      console.log('Post disliked with ID: ', postId);
+    } catch (error) {
+      console.error('Error disliking post: ', error);
+    }
   };
+  
 
-  const handleDislike = (postId) => {
-    setPosts(prevPosts => {
-      return prevPosts.map(post => {
-        if (post.id === postId) {
-          return { ...post, dislikes: post.dislikes + 1 };
-        }
-        return post;
-      });
-    });
-  };
-
-  const handleAddComment = (postId) => {
+  const handleAddComment = async (postId) => {
     if (commentText.trim() === '') {
-      return; // Do not add empty comments
+      return;
     }
-    setPosts(prevPosts => {
-      return prevPosts.map(post => {
-        if (post.id === postId) {
-          return { ...post, comments: [...post.comments, commentText] };
-        }
-        return post;
+    try {
+      await updateDoc(doc(firestore, 'posts', postId), {
+        comments: FieldValue.arrayUnion(commentText)
       });
-    });
-    setCommentText(''); // Clear the comment box after adding the comment
+      console.log('Comment added to post with ID: ', postId);
+      setCommentText('');
+    } catch (error) {
+      console.error('Error adding comment: ', error);
+    }
+  };
+  
+  const handlePost = async () => {
+    if (selectedImage || postText.trim() !== '') {
+      try {
+        const newPostRef = await addDoc(collection(firestore, 'posts'), {
+          imageUrl: selectedImage,
+          expression: expression,
+          likes: 0,
+          dislikes: 0,
+          comments: [],
+          text: postText.trim(),
+          createdAt: serverTimestamp(),
+          userId: currentUserId, // Add user ID to the post
+          user: { // Add user details to the post
+            name: userData.userName,
+            profileImage: userData.userProfilePic
+          }
+        });
+        console.log('New post added with ID: ', newPostRef.id);
+        setSelectedImage(null);
+        setExpression(null);
+        setPostText('');
+        setShowPosts(true);
+      } catch (error) {
+        console.error('Error adding post: ', error);
+      }
+    }
   };
 
-  const handlePost = () => {
-    if (selectedImage) {
-      // Implement logic to post the selected image, detected expression, likes, comments, etc.
-      const newPost = {
-        id: `${Date.now()}`,
-        image: selectedImage,
-        expression: expression,
-        likes: 0,
-        dislikes: 0,
-        comments: [],
-      };
-      setPosts(prevPosts => [...prevPosts, newPost]);
-      setSelectedImage(null);
-      setExpression(null);
-      setShowPosts(true);
-    }
-  };
+  console.log(posts[0]);
 
   return (
     <View style={styles.container}>
@@ -129,12 +233,18 @@ const PostScreen = () => {
         <Text style={styles.headerText}>Detect and Create a post</Text>
       </View>
       <View style={styles.postContainer}>
+        <TouchableOpacity style={styles.closeButton} onPress={() => setShowPosts(false)}>
+          <Ionicons name="close" size={30} color="black" />
+
+        </TouchableOpacity>
         <View style={styles.inputContainer}>
-          <Image source={require('../assets/L2.png')} style={styles.profileImage} />
+          <Image source={{ uri: imageUri}} style={styles.profileImage} />
           <TextInput
             placeholder="What's on your mind?"
             multiline={true}
             style={styles.input}
+            value={postText}
+            onChangeText={setPostText}
           />
         </View>
         {!selectedImage && !isCameraOpen && (
@@ -158,6 +268,9 @@ const PostScreen = () => {
             type={Camera.Constants.Type.back}
             ref={(ref) => setCamera(ref)}
           >
+            <TouchableOpacity style={styles.closeButton} onPress={() => setIsCameraOpen(false)}>
+              <Ionicons name="close" size={30} color="white" />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.takePictureButton} onPress={takePicture}>
               <Ionicons name="camera" size={50} color="white" />
             </TouchableOpacity>
@@ -165,6 +278,9 @@ const PostScreen = () => {
         )}
         {selectedImage && (
           <View style={styles.imageContainer}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedImage(null)}>
+              <Ionicons name="close" size={30} color="black" />
+            </TouchableOpacity>
             <Image source={{ uri: selectedImage }} style={styles.image} />
             <Text style={styles.expressionText}>Detected Expression: {expression}</Text>
             <TouchableOpacity style={styles.postImageButton} onPress={handlePost}>
@@ -178,7 +294,22 @@ const PostScreen = () => {
           data={posts}
           renderItem={({ item }) => (
             <View style={styles.post}>
-              <Image source={{ uri: item.image }} style={styles.postImage} />
+             <View style={styles.userInfo}>
+               {item.user && item.user.profileImage && (
+                 <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
+                  )}
+                      {item.user && item.user.name && (
+                         <Text style={styles.userName}>{item.user.name}</Text>
+                   )}
+                </View>
+
+
+              {item.imageUrl && (
+                <Image source={{ uri: item.imageUrl }} style={styles.image} />
+              )}
+              {item.text !== '' && (
+                <Text style={styles.postText}>{item.text}</Text>
+              )}
               <Text style={styles.expressionText}>Detected Expression: {item.expression}</Text>
               <View style={styles.interactionContainer}>
                 <TouchableOpacity style={styles.interactionButton} onPress={() => handleLike(item.id)}>
@@ -268,6 +399,12 @@ const styles = StyleSheet.create({
   takePictureButton: {
     marginBottom: 20,
   },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+  },
   imageContainer: {
     marginTop: 10,
     alignItems: 'center',
@@ -347,7 +484,6 @@ const styles = StyleSheet.create({
   },
   commentButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
   },
   postImageButton: {
     backgroundColor: '#4267B2',
@@ -358,7 +494,21 @@ const styles = StyleSheet.create({
   },
   postImageButtonText: {
     color: '#fff',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  userProfileImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 10,
+  },
+  userName: {
     fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

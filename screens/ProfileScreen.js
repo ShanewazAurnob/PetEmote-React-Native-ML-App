@@ -79,6 +79,7 @@ const ProfileScreen = ({ navigation }) => {
       }
     }
   };
+  
   const getImageUrlToShow = (image)=>{
     const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(image)}?alt=media`;
     return imageUrl

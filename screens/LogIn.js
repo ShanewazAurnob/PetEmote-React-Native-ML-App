@@ -43,7 +43,7 @@ export default function LoginScreen({ navigation }) {
                             const loggedUserInfoString = JSON.stringify(loggedUserInfo);
                             AsyncStorage.setItem('userData', loggedUserInfoString)
                                 .then(() => {
-                                    // console.log('Data stored successfully!');
+                                     console.log('Data stored successfully!')
                                 })
                                 .catch((error) => {
                                     // console.log('Error storing data:', error);
@@ -52,7 +52,7 @@ export default function LoginScreen({ navigation }) {
                         setEmail('');
                         setPassword('');
                         setLoading(false);
-                        navigation.replace('AppNav'); // Navigate to the home screen
+                        navigation.replace('AppNav'); 
                     });
                 } else {
                     Alert.alert("Please verify your email first.");
