@@ -22,8 +22,9 @@ const PostScreen = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [imageUri, setImageUri] = useState(null);
   const [user, setuser] = useState({})
-
+  const [showPostButton, setShowPostButton] = useState(false);
   const [newImageUri, setnewImageUri] = useState(null)
+  const [commentTexts, setCommentTexts] = useState({});
 
   const storageUrl = 'petemotes-25000.appspot.com';
 
@@ -76,6 +77,7 @@ const PostScreen = () => {
       if(userData){
         const user = JSON.parse(userData);
         setUserData(user)
+        setCurrentUserId(user.userRef)
         preFetchDP(user.userProfilePic)
       }
       else{
@@ -110,6 +112,8 @@ const PostScreen = () => {
       const photo = await camera.takePictureAsync({ quality: 0.5 });
       setSelectedImage(photo.uri);
       detectExpression(photo.uri);
+      setIsCameraOpen(false); // Close the camera after taking the picture
+    setShowPostButton(true); 
     }
   };
 
@@ -120,12 +124,22 @@ const PostScreen = () => {
       aspect: [3, 4],
       quality: 1,
     });
-
-    if (!result.cancelled) {
+  
+    if (!result.canceled) {
       setSelectedImage(result.uri);
-      detectExpression(result.uri);
+      setImageUri(result.uri);
+      detectExpression(result.uri); // Detect expression for the selected image
+      setIsCameraOpen(false); // Close the camera if it's open
+      setShowPostButton(true); // Show the post button after selecting the image
     }
   };
+
+  const handlePostAfterImageSelection = () => {
+    handlePost();
+    setShowPostButton(false); // Hide the post button after posting the image
+  };
+  
+  
 
   const detectExpression = async (imageUri) => {
     const expressions = ['Happy', 'Sad', 'Angry', 'Surprised', 'Neutral'];
@@ -183,49 +197,68 @@ const PostScreen = () => {
   
 
   const handleAddComment = async (postId) => {
-    if (commentText.trim() === '') {
+    const currentCommentText = commentTexts[postId];
+    if (!currentCommentText || currentCommentText.trim() === '') {
       return;
     }
     try {
       await updateDoc(doc(firestore, 'posts', postId), {
-        comments: FieldValue.arrayUnion(commentText)
+        comments: arrayUnion(currentCommentText)
       });
       console.log('Comment added to post with ID: ', postId);
-      setCommentText('');
+      setCommentTexts({ ...commentTexts, [postId]: '' });
     } catch (error) {
       console.error('Error adding comment: ', error);
     }
   };
   
   const handlePost = async () => {
-    if (selectedImage || postText.trim() !== '') {
-      try {
-        const newPostRef = await addDoc(collection(firestore, 'posts'), {
-          imageUrl: selectedImage,
-          expression: expression,
-          likes: 0,
-          dislikes: 0,
-          comments: [],
-          text: postText.trim(),
-          createdAt: serverTimestamp(),
-          userId: currentUserId, // Add user ID to the post
-          user: { // Add user details to the post
-            name: userData.userName,
-            profileImage: userData.userProfilePic
-          }
-        });
-        console.log('New post added with ID: ', newPostRef.id);
-        setSelectedImage(null);
-        setExpression(null);
-        setPostText('');
-        setShowPosts(true);
-      } catch (error) {
-        console.error('Error adding post: ', error);
+    if (isCameraOpen) {
+      console.warn('Cannot post while the camera is open.');
+      return;
+    }
+  
+    if (!selectedImage && !postText.trim()) {
+      console.warn('Image or post text is missing.'); // Log a warning if image or post text is missing
+      return;
+    }
+  
+    try {
+      const postData = {
+        expression,
+        likes: 0,
+        dislikes: 0,
+        comments: [],
+        createdAt: serverTimestamp(),
+        userId: currentUserId,
+        user: {
+          name: userData.userName,
+          profileImage: userData.userProfilePic
+        }
+      };
+  
+      if (selectedImage) {
+        postData.imageUrl = selectedImage; // Set imageUrl only if an image is selected
+        setImageUri(null);
       }
+  
+      if (postText.trim()) {
+        postData.text = postText.trim(); // Set text only if it's not empty
+      }
+  
+      const newPostRef = await addDoc(collection(firestore, 'posts'), postData);
+      console.log('New post added with ID: ', newPostRef.id);
+      setSelectedImage(null);
+      setExpression(null);
+      setPostText('');
+      setShowPosts(true);
+    } catch (error) {
+      console.error('Error adding post: ', error);
     }
   };
+  
 
-  console.log(posts[0]);
+  // console.log(posts[0]);
 
   return (
     <View style={styles.container}>
@@ -257,9 +290,12 @@ const PostScreen = () => {
               <Ionicons name="image" size={24} color="black" />
               <Text style={styles.actionText}>Gallery</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={handlePost}>
-              <Text style={styles.actionText}>Post</Text>
-            </TouchableOpacity>
+
+              {showPostButton && (
+  <TouchableOpacity style={styles.postImageButton} onPress={handlePostAfterImageSelection}>
+    <Text style={styles.postImageButtonText}>Post</Text>
+  </TouchableOpacity>
+)}
           </View>
         )}
         {isCameraOpen && cameraPermission && (
@@ -322,12 +358,13 @@ const PostScreen = () => {
                 </TouchableOpacity>
               </View>
               <View style={styles.commentsContainer}>
-                <TextInput
-                  placeholder="Write a comment..."
-                  value={commentText}
-                  onChangeText={setCommentText}
-                  style={styles.inputComment}
-                />
+              <TextInput
+  placeholder="Write a comment..."
+  value={commentTexts[item.id] || ''}
+  onChangeText={(text) => setCommentTexts({ ...commentTexts, [item.id]: text })}
+  style={styles.inputComment}
+/>
+
                 <TouchableOpacity
                   style={styles.commentButton}
                   onPress={() => handleAddComment(item.id)}
