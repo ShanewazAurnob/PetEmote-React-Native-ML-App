@@ -1,11 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, TextInput, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, TextInput, FlatList, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, addDoc, updateDoc, doc, serverTimestamp, increment, decrement, arrayUnion, arrayRemove, getDoc, onSnapshot } from 'firebase/firestore'; // Import Firestore methods
 import { firestore } from '../config'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as tf from "@tensorflow/tfjs";
+import * as FileSystem from "expo-file-system";
+import {
+  bundleResourceIO,
+  decodeJpeg,
+  fetch,
+} from "@tensorflow/tfjs-react-native";
+
+const modelJson = require("../assets/trained_model/model.json");
+const modelWeights = require("../assets/trained_model/weights.bin");
+
+const datasetClasses = [
+  // "Invalid",
+  "Angry",
+  "Happy",
+  "Other",
+  "Sad",
+];
+
+const transformImageToTensor = async (uri) => {
+  //read the image as base64
+  const img64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const imgBuffer = tf.util.encodeString(img64, "base64").buffer;
+  const raw = new Uint8Array(imgBuffer);
+  let imgTensor = decodeJpeg(raw);
+  const scalar = tf.scalar(255);
+  //resize the image
+  imgTensor = tf.image.resizeNearestNeighbor(imgTensor, [224, 224]);
+  //normalize; if a normalization layer is in the model, this step can be skipped
+  const tensorScaled = imgTensor.div(scalar);
+  //final shape of the tensor
+  const img = tf.reshape(tensorScaled, [1, 224, 224, 3]);
+  return img;
+};
 
 const PostScreen = () => {
   const [cameraPermission, setCameraPermission] = useState(null);
@@ -25,6 +60,9 @@ const PostScreen = () => {
   const [showPostButton, setShowPostButton] = useState(false);
   const [newImageUri, setnewImageUri] = useState(null)
   const [commentTexts, setCommentTexts] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [prediction, setPrediction] = useState(null);
+  const [model, setModel] = useState();
 
   const storageUrl = 'petemotes-25000.appspot.com';
 
@@ -41,7 +79,7 @@ const PostScreen = () => {
 
   useEffect(() => {
     (async () => {
-      const cameraPermission = await Camera.requestCameraPermissionsAsync();
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
       const galleryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       setCameraPermission(cameraPermission.status === 'granted');
       setGalleryPermission(galleryPermission.status === 'granted');
@@ -119,29 +157,71 @@ const PostScreen = () => {
   }, [userData])
 
   const takePicture = async () => {
-    if (camera) {
-      const photo = await camera.takePictureAsync({ quality: 0.5 });
-      setSelectedImage(photo.uri);
-      detectExpression(photo.uri);
-      setIsCameraOpen(false); // Close the camera after taking the picture
-    setShowPostButton(true); 
-    }
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status: mediaPermissionStatus } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+  
+      if (status === "granted" && mediaPermissionStatus === "granted") {
+        let result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 4],
+          quality: 1,
+        });
+  
+        if (!result.canceled) {
+          setSelectedImage(result.assets[0].uri);
+          setLoading(true);
+        await tf.ready();
+        const model = await tf.loadLayersModel(
+          bundleResourceIO(modelJson, modelWeights)
+        );
+        setModel(model);
+
+        const imageTensor = await transformImageToTensor(result.assets[0].uri);
+        const predictions = model.predict(imageTensor);
+        const highestPredictionIndex = predictions.argMax(1).dataSync();
+        const predictedClass = `${datasetClasses[highestPredictionIndex]}`;
+        console.log(predictedClass);
+        setPrediction(predictedClass);
+        setLoading(false);
+        
+          setIsCameraOpen(false); // Close the camera after taking the picture
+        setShowPostButton(true);
+        }
+      } else {
+        alert("Camera permission not granted");
+      }
   };
 
   const pickImageFromGallery = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [3, 4],
+      aspect: [4, 4],
       quality: 1,
     });
   
     if (!result.canceled) {
-      setSelectedImage(result.uri);
-      setImageUri(result.uri);
-      detectExpression(result.uri); // Detect expression for the selected image
-      setIsCameraOpen(false); // Close the camera if it's open
-      setShowPostButton(true); // Show the post button after selecting the image
+      setSelectedImage(result.assets[0].uri);
+      setImageUri(result.assets[0].uri);
+      // detectExpression(result.assets[0].uri); // Detect expression for the selected image
+      // setIsCameraOpen(false); // Close the camera if it's open
+      // setShowPostButton(true); // Show the post button after selecting the image
+      setLoading(true);
+        await tf.ready();
+        const model = await tf.loadLayersModel(
+          bundleResourceIO(modelJson, modelWeights)
+        );
+        setModel(model);
+
+        const imageTensor = await transformImageToTensor(result.assets[0].uri);
+        const predictions = model.predict(imageTensor);
+        const highestPredictionIndex = predictions.argMax(1).dataSync();
+        const predictedClass = `${datasetClasses[highestPredictionIndex]}`;
+        console.log(predictedClass);
+        setPrediction(predictedClass);
+        setLoading(false);
     }
   };
 
@@ -158,53 +238,65 @@ const PostScreen = () => {
     setExpression(detectedExpression);
   };
 
-  const handleLike = async (postId) => {
-    try {
-      const postRef = doc(firestore, 'posts', postId);
-      const postSnapshot = await getDoc(postRef);
-      const postData = postSnapshot.data();
-      
-      if (postData.dislikedBy && postData.dislikedBy.includes(currentUserId)) {
-        await updateDoc(postRef, {
-          dislikes: decrement(1),
-          dislikedBy: arrayRemove(currentUserId)
-        });
-      }
-      
-      await updateDoc(postRef, {
-        likes: increment(1),
-        likedBy: arrayUnion(currentUserId)
-      });
-      
-      console.log('Post liked with ID: ', postId);
-    } catch (error) {
-      console.error('Error liking post: ', error);
+  
+const handleLike = async (postId) => {
+  try {
+    const postRef = doc(firestore, 'posts', postId);
+    const postSnapshot = await getDoc(postRef);
+    const postData = postSnapshot.data();
+    
+    if (postData.likedBy && postData.likedBy.includes(currentUserId)) {
+      console.log('User has already liked this post.');
+      return;
     }
-  };
+    
+    if (postData.dislikedBy && postData.dislikedBy.includes(currentUserId)) {
+      await updateDoc(postRef, {
+        dislikes: decrement(1),
+        dislikedBy: arrayRemove(currentUserId)
+      });
+    }
+    
+    await updateDoc(postRef, {
+      likes: increment(1),
+      likedBy: arrayUnion(currentUserId)
+    });
+    
+    console.log('Post liked with ID: ', postId);
+  } catch (error) {
+    console.error('Error liking post: ', error);
+  }
+};
 
-  const handleDislike = async (postId) => {
-    try {
-      const postRef = doc(firestore, 'posts', postId);
-      const postSnapshot = await getDoc(postRef);
-      const postData = postSnapshot.data();
-      
-      if (postData.likedBy && postData.likedBy.includes(currentUserId)) {
-        await updateDoc(postRef, {
-          likes: postData.likes - 1, // Manually decrease likes by 1
-          likedBy: arrayRemove(currentUserId)
-        });
-      }
-      
-      await updateDoc(postRef, {
-        dislikes: postData.dislikes + 1, // Manually increase dislikes by 1
-        dislikedBy: arrayUnion(currentUserId)
-      });
-      
-      console.log('Post disliked with ID: ', postId);
-    } catch (error) {
-      console.error('Error disliking post: ', error);
+const handleDislike = async (postId) => {
+  try {
+    const postRef = doc(firestore, 'posts', postId);
+    const postSnapshot = await getDoc(postRef);
+    const postData = postSnapshot.data();
+    
+    if (postData.dislikedBy && postData.dislikedBy.includes(currentUserId)) {
+      console.log('User has already disliked this post.');
+      return;
     }
-  };
+    
+    if (postData.likedBy && postData.likedBy.includes(currentUserId)) {
+      await updateDoc(postRef, {
+        likes: decrement(1),
+        likedBy: arrayRemove(currentUserId)
+      });
+    }
+    
+    await updateDoc(postRef, {
+      dislikes: increment(1),
+      dislikedBy: arrayUnion(currentUserId)
+    });
+    
+    console.log('Post disliked with ID: ', postId);
+  } catch (error) {
+    console.error('Error disliking post: ', error);
+  }
+};
+
   
 
   const handleAddComment = async (postId) => {
@@ -337,9 +429,9 @@ const PostScreen = () => {
             onChangeText={setPostText}
           />
         </View>
-        {!selectedImage && !isCameraOpen && (
+        {!selectedImage && (
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.actionButton} onPress={() => setIsCameraOpen(true)}>
+            <TouchableOpacity style={styles.actionButton} onPress={takePicture}>
               <Ionicons name="camera" size={24} color="black" />
               <Text style={styles.actionText}>Photo</Text>
             </TouchableOpacity>
@@ -355,7 +447,7 @@ const PostScreen = () => {
 )}
           </View>
         )}
-        {isCameraOpen && cameraPermission && (
+        {/* {isCameraOpen && cameraPermission && (
           <Camera
             style={styles.camera}
             type={Camera.Constants.Type.back}
@@ -368,14 +460,18 @@ const PostScreen = () => {
               <Ionicons name="camera" size={50} color="white" />
             </TouchableOpacity>
           </Camera>
-        )}
+        )} */}
         {selectedImage && (
           <View style={styles.imageContainer}>
             <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedImage(null)}>
               <Ionicons name="close" size={30} color="black" />
             </TouchableOpacity>
             <Image source={{ uri: selectedImage }} style={styles.image} />
-            <Text style={styles.expressionText}>Detected Expression: {expression}</Text>
+            <Text style={styles.expressionText}>Detected Expression: {loading ? (
+                <ActivityIndicator size={24} color={"#002D02"} />
+              ) : (
+                prediction
+              )}</Text>
             <TouchableOpacity style={styles.postImageButton} onPress={handlePost}>
               <Text style={styles.postImageButtonText}>Post</Text>
             </TouchableOpacity>
