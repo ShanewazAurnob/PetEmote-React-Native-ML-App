@@ -397,12 +397,13 @@ const PostScreen = () => {
                 </View>
 
 
+                {item.text !== '' && (
+                <Text style={styles.postText}>{item.text}</Text>
+              )}
               {item.imageUrl && (
                 <Image source={{ uri: item.imageUrl }} style={styles.image} />
               )}
-              {item.text !== '' && (
-                <Text style={styles.postText}>{item.text}</Text>
-              )}
+             
               <Text style={styles.expressionText}>Detected Expression: {item.expression}</Text>
               <View style={styles.interactionContainer}>
                 <TouchableOpacity style={styles.interactionButton} onPress={() => handleLike(item.id)}>
@@ -601,6 +602,9 @@ const styles = StyleSheet.create({
   },
   commentButtonText: {
     color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+
   },
   postImageButton: {
     backgroundColor: '#4267B2',
@@ -663,6 +667,10 @@ const styles = StyleSheet.create({
   loadMoreButtonText: {
     color: '#fff',
     textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  postText: {
+    fontSize: 20,
   },
 });
 export default PostScreen;
