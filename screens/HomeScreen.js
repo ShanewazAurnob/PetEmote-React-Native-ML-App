@@ -28,6 +28,17 @@ const PostScreen = () => {
 
   const storageUrl = 'petemotes-25000.appspot.com';
 
+  const [commentsToShow, setCommentsToShow] = useState(0); // State to keep track of the number of comments to show
+  // Other state variables and useEffects
+
+  const handleLoadMoreComments = (postId) => {
+    // Function to load more comments for the given postId
+    // Increase the number of comments to show by one
+    setCommentsToShow(commentsToShow + 1); // Increase by one
+  };
+
+
+
   useEffect(() => {
     (async () => {
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
@@ -202,15 +213,30 @@ const PostScreen = () => {
       return;
     }
     try {
-      await updateDoc(doc(firestore, 'posts', postId), {
-        comments: arrayUnion(currentCommentText)
+      const postDataRef = doc(firestore, 'posts', postId);
+      const postDataSnapshot = await getDoc(postDataRef);
+      const postData = postDataSnapshot.data();
+
+      const updatedComments = [
+        ...postData.comments,
+        {
+          text: currentCommentText,
+          userName: userData.userName, // Include user's name in the comment data
+          userId: currentUserId,
+        }
+      ];
+
+      await updateDoc(postDataRef, {
+        comments: updatedComments,
       });
+
       console.log('Comment added to post with ID: ', postId);
       setCommentTexts({ ...commentTexts, [postId]: '' });
     } catch (error) {
       console.error('Error adding comment: ', error);
     }
   };
+
   
   const handlePost = async () => {
     if (isCameraOpen) {
@@ -258,7 +284,38 @@ const PostScreen = () => {
   };
   
 
+
   // console.log(posts[0]);
+
+
+
+  const renderComments = (item) => (
+    <View>
+      <Text style={styles.commentsTitle}>User Comments:</Text>
+      {item.comments.slice().reverse().slice(0, commentsToShow).map((comment, index) => (
+        <View key={index} style={styles.commentContainer}>
+          {/* Display user profile image and name */}
+          <View style={styles.commentUserInfo}>
+                    {userData && userData.userProfilePic && (
+                        <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
+                    )}
+                    {userData && userData.userName && (
+                      <Text style={styles.commentUserName}>{userData.userName}</Text>
+                    )}
+                  </View>
+          {/* Display the comment text */}
+          <Text style={styles.commentText}>{comment.text}</Text>
+        </View>
+      ))}
+      {/* Load more comments button */}
+      {item.comments.length > commentsToShow && (
+        <TouchableOpacity onPress={() => handleLoadMoreComments(item.id)} style={styles.loadMoreButton}>
+          <Text style={styles.loadMoreButtonText}>Load More Comments</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
 
   return (
     <View style={styles.container}>
@@ -359,11 +416,11 @@ const PostScreen = () => {
               </View>
               <View style={styles.commentsContainer}>
               <TextInput
-  placeholder="Write a comment..."
-  value={commentTexts[item.id] || ''}
-  onChangeText={(text) => setCommentTexts({ ...commentTexts, [item.id]: text })}
-  style={styles.inputComment}
-/>
+                 placeholder="Write a comment..."
+                 value={commentTexts[item.id] || ''}
+                 onChangeText={(text) => setCommentTexts({ ...commentTexts, [item.id]: text })}
+                 style={styles.inputComment}
+                  />
 
                 <TouchableOpacity
                   style={styles.commentButton}
@@ -371,15 +428,38 @@ const PostScreen = () => {
                 >
                   <Text style={styles.commentButtonText}>Comment</Text>
                 </TouchableOpacity>
-                <Text style={styles.commentsTitle}>Comments:</Text>
-                {item.comments.map((comment, index) => (
-                  <Text key={index} style={styles.comment}>{comment}</Text>
-                ))}
-              </View>
+
+                <Text style={styles.commentsTitle}>User Comments:</Text>
+                
+                {item.comments.slice().reverse().slice(0, commentsToShow).map((comment, index) => (
+                <View key={index} style={styles.commentContainer}>
+                  {/* Display user profile image and name */}
+                  <View style={styles.commentUserInfo}>
+                    {userData && userData.userProfilePic && (
+                        <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
+                    )}
+                    {userData && userData.userName && (
+                      <Text style={styles.commentUserName}>{userData.userName}</Text>
+                    )}
+                  </View>
+                  {/* Display the comment text */}
+                  <Text style={styles.commentText}>
+  {comment.text} - {comment.userName}
+</Text>
+
+                </View>
+              ))}
+              {/* Load more comments button */}
+              {item.comments.length > commentsToShow && (
+                <TouchableOpacity onPress={() => handleLoadMoreComments(item.id)} style={styles.loadMoreButton}>
+                  <Text style={styles.loadMoreButtonText}>Load More Comments</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          )}
-          keyExtractor={(item) => item.id}
-        />
+          </View>
+        )}
+        keyExtractor={(item) => item.id}
+      />
       )}
     </View>
   );
@@ -547,6 +627,42 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  commentContainer: {
+    marginBottom: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+  },
+  commentUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  commentUserProfilePic: {
+    width: 20, // Adjust width to make the profile picture smaller
+    height: 20, // Adjust height to make the profile picture smaller
+    borderRadius: 10, // Keep border radius half of the width or height to maintain a circular shape
+    marginRight: 10,
+  },
+  commentUserName: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  commentText: {
+    fontSize: 14,
+  },
+  loadMoreButton: {
+    backgroundColor: '#4267B2',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginTop: 10,
+    alignSelf: 'flex-start', // Align the button to the left side
+  },
+  loadMoreButtonText: {
+    color: '#fff',
+    textAlign: 'center',
+  },
 });
-
 export default PostScreen;
