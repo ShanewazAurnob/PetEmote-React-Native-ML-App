@@ -234,18 +234,19 @@ const postsPerPage = 5; // Number of posts per page
     }
   };
 
-  const handlePostAfterImageSelection = () => {
-    handlePost();
-    setShowPostButton(false); // Hide the post button after posting the image
-  };
+  // const handlePostAfterImageSelection = async() => {
+  //   await detectExpression(selectedImage);
+  //   handlePost();
+  //   setShowPostButton(false); // Hide the post button after posting the image
+  // };
   
   
 
-  const detectExpression = async (imageUri) => {
-    const expressions = ['Happy', 'Sad', 'Angry', 'Surprised', 'Neutral'];
-    const detectedExpression = expressions[Math.floor(Math.random() * expressions.length)];
-    setExpression(detectedExpression);
-  };
+  // const detectExpression = async (imageUri) => {
+  //   const expressions = ['Happy', 'Sad', 'Angry', 'Surprised', 'Neutral'];
+  //   const detectedExpression = expressions[Math.floor(Math.random() * expressions.length)];
+  //   setExpression(detectedExpression);
+  // };
 
   
 const handleLike = async (postId) => {
@@ -352,7 +353,7 @@ const handleDislike = async (postId) => {
   
     try {
       const postData = {
-        expression,
+        prediction,
         likes: 0,
         dislikes: 0,
         comments: [],
@@ -376,7 +377,7 @@ const handleDislike = async (postId) => {
       const newPostRef = await addDoc(collection(firestore, 'posts'), postData);
       console.log('New post added with ID: ', newPostRef.id);
       setSelectedImage(null);
-      setExpression(null);
+      setPrediction(null);
       setPostText('');
       setShowPosts(true);
     } catch (error) {
@@ -477,7 +478,7 @@ const handleDislike = async (postId) => {
               <Ionicons name="close" size={30} color="black" />
             </TouchableOpacity>
             <Image source={{ uri: selectedImage }} style={styles.image} />
-            <Text style={styles.expressionText}>Detected Expression: {loading ? (
+            <Text style={styles.predictionText}>Detected Expression: {loading ? (
                 <ActivityIndicator size={24} color={"#002D02"} />
               ) : (
                 prediction
@@ -510,7 +511,7 @@ const handleDislike = async (postId) => {
                 <Image source={{ uri: item.imageUrl }} style={styles.image} />
               )}
              
-              <Text style={styles.expressionText}>Detected Expression: {item.expression}</Text>
+              <Text style={styles.predictionText}>Detected Expression: {item.prediction}</Text>
               <View style={styles.interactionContainer}>
                 <TouchableOpacity style={styles.interactionButton} onPress={() => handleLike(item.id)}>
                   <Ionicons name="thumbs-up" size={20} color="blue" />
@@ -657,11 +658,11 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 200,
+    height: 350,
     marginBottom: 10,
     borderRadius: 10,
   },
-  expressionText: {
+  predictionText: {
     marginBottom: 10,
     fontWeight: 'bold',
   },
