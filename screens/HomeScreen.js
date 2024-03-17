@@ -63,6 +63,9 @@ const PostScreen = () => {
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState(null);
   const [model, setModel] = useState();
+// Add state variables for pagination
+const [currentPage, setCurrentPage] = useState(1);
+const postsPerPage = 5; // Number of posts per page
 
   const storageUrl = 'petemotes-25000.appspot.com';
 
@@ -75,7 +78,13 @@ const PostScreen = () => {
     setCommentsToShow(commentsToShow + 1); // Increase by one
   };
 
-
+  const handlePreviousPage = () => {
+    setCurrentPage(currentPage - 1);
+  };
+  
+  const handleNextPage = () => {
+    setCurrentPage(currentPage + 1);
+  };
 
   useEffect(() => {
     (async () => {
@@ -384,29 +393,30 @@ const handleDislike = async (postId) => {
   const renderComments = (item) => (
     <View>
       <Text style={styles.commentsTitle}>User Comments:</Text>
-      {item.comments.slice().reverse().slice(0, commentsToShow).map((comment, index) => (
+      {Array.isArray(item.comments) && item.comments.slice().reverse().slice(0, commentsToShow).map((comment, index) => (
         <View key={index} style={styles.commentContainer}>
           {/* Display user profile image and name */}
           <View style={styles.commentUserInfo}>
-                    {userData && userData.userProfilePic && (
-                        <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
-                    )}
-                    {userData && userData.userName && (
-                      <Text style={styles.commentUserName}>{userData.userName}</Text>
-                    )}
-                  </View>
+            {userData && userData.userProfilePic && (
+              <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
+            )}
+            {userData && userData.userName && (
+              <Text style={styles.commentUserName}>{userData.userName}</Text>
+            )}
+          </View>
           {/* Display the comment text */}
           <Text style={styles.commentText}>{comment.text}</Text>
         </View>
       ))}
       {/* Load more comments button */}
-      {item.comments.length > commentsToShow && (
+      {Array.isArray(item.comments) && item.comments.length > commentsToShow && (
         <TouchableOpacity onPress={() => handleLoadMoreComments(item.id)} style={styles.loadMoreButton}>
           <Text style={styles.loadMoreButtonText}>Load More Comments</Text>
         </TouchableOpacity>
       )}
     </View>
   );
+  
 
 
   return (
@@ -480,8 +490,8 @@ const handleDislike = async (postId) => {
       </View>
       {showPosts && (
         <FlatList
-          data={posts}
-          renderItem={({ item }) => (
+        data={posts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage)}
+        renderItem={({ item }) => (
             <View style={styles.post}>
              <View style={styles.userInfo}>
                {item.user && item.user.profileImage && (
@@ -552,13 +562,35 @@ const handleDislike = async (postId) => {
                   <Text style={styles.loadMoreButtonText}>Load More Comments</Text>
                 </TouchableOpacity>
               )}
+
+
+
             </View>
           </View>
+          
         )}
         keyExtractor={(item) => item.id}
       />
       )}
+      <View style={styles.pagination}>
+      <TouchableOpacity
+        onPress={handlePreviousPage}
+        disabled={currentPage === 1}
+        style={[styles.paginationButton, currentPage === 1 && { opacity: 0.5 }]}
+      >
+        <Text style={styles.paginationButtonText}>Previous</Text>
+      </TouchableOpacity>
+      <Text style={styles.pageNumber}>{currentPage}</Text>
+      <TouchableOpacity
+        onPress={handleNextPage}
+        disabled={currentPage === Math.ceil(posts.length / postsPerPage)}
+        style={[styles.paginationButton, currentPage === Math.ceil(posts.length / postsPerPage) && { opacity: 0.5 }]}
+      >
+        <Text style={styles.paginationButtonText}>Next</Text>
+      </TouchableOpacity>
     </View>
+    </View>
+
   );
 };
 
@@ -768,5 +800,27 @@ const styles = StyleSheet.create({
   postText: {
     fontSize: 20,
   },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  paginationButton: {
+    backgroundColor: '#4267B2',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginHorizontal: 5,
+  },
+  paginationButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  pageNumber: {
+    paddingHorizontal: 10,
+    fontSize: 16,
+  },
+
 });
 export default PostScreen;
