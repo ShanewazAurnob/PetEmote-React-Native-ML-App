@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, TextInput, FlatList, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, increment, decrement, arrayUnion, arrayRemove, getDoc, onSnapshot } from 'firebase/firestore'; // Import Firestore methods
+import { collection, addDoc, updateDoc, doc, serverTimestamp, increment, arrayUnion, arrayRemove, getDoc, onSnapshot } from 'firebase/firestore'; // Import Firestore methods
 import { firestore } from '../config'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as tf from "@tensorflow/tfjs";
@@ -69,7 +69,7 @@ const postsPerPage = 5; // Number of posts per page
 
   const storageUrl = 'petemotes-25000.appspot.com';
 
-  const [commentsToShow, setCommentsToShow] = useState(0); // State to keep track of the number of comments to show
+  const [commentsToShow, setCommentsToShow] = useState(1); // State to keep track of the number of comments to show
   // Other state variables and useEffects
 
   const handleLoadMoreComments = (postId) => {
@@ -234,19 +234,7 @@ const postsPerPage = 5; // Number of posts per page
     }
   };
 
-  // const handlePostAfterImageSelection = async() => {
-  //   await detectExpression(selectedImage);
-  //   handlePost();
-  //   setShowPostButton(false); // Hide the post button after posting the image
-  // };
   
-  
-
-  // const detectExpression = async (imageUri) => {
-  //   const expressions = ['Happy', 'Sad', 'Angry', 'Surprised', 'Neutral'];
-  //   const detectedExpression = expressions[Math.floor(Math.random() * expressions.length)];
-  //   setExpression(detectedExpression);
-  // };
 
   
 const handleLike = async (postId) => {
@@ -262,7 +250,7 @@ const handleLike = async (postId) => {
     
     if (postData.dislikedBy && postData.dislikedBy.includes(currentUserId)) {
       await updateDoc(postRef, {
-        dislikes: decrement(1),
+        dislikes: increment(-1),
         dislikedBy: arrayRemove(currentUserId)
       });
     }
@@ -291,7 +279,7 @@ const handleDislike = async (postId) => {
     
     if (postData.likedBy && postData.likedBy.includes(currentUserId)) {
       await updateDoc(postRef, {
-        likes: decrement(1),
+        likes: increment(-1),
         likedBy: arrayRemove(currentUserId)
       });
     }
@@ -323,7 +311,7 @@ const handleDislike = async (postId) => {
         ...postData.comments,
         {
           text: currentCommentText,
-          userName: userData.userName, // Include user's name in the comment data
+          userName: userData.userName, 
           userId: currentUserId,
         }
       ];
@@ -347,7 +335,7 @@ const handleDislike = async (postId) => {
     }
   
     if (!selectedImage && !postText.trim()) {
-      console.warn('Image or post text is missing.'); // Log a warning if image or post text is missing
+      console.warn('Image or post text is missing.'); 
       return;
     }
   
@@ -396,7 +384,7 @@ const handleDislike = async (postId) => {
       <Text style={styles.commentsTitle}>User Comments:</Text>
       {Array.isArray(item.comments) && item.comments.slice().reverse().slice(0, commentsToShow).map((comment, index) => (
         <View key={index} style={styles.commentContainer}>
-          {/* Display user profile image and name */}
+        
           <View style={styles.commentUserInfo}>
             {userData && userData.userProfilePic && (
               <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
@@ -405,11 +393,11 @@ const handleDislike = async (postId) => {
               <Text style={styles.commentUserName}>{userData.userName}</Text>
             )}
           </View>
-          {/* Display the comment text */}
+         
           <Text style={styles.commentText}>{comment.text}</Text>
         </View>
       ))}
-      {/* Load more comments button */}
+      
       {Array.isArray(item.comments) && item.comments.length > commentsToShow && (
         <TouchableOpacity onPress={() => handleLoadMoreComments(item.id)} style={styles.loadMoreButton}>
           <Text style={styles.loadMoreButtonText}>Load More Comments</Text>
@@ -458,20 +446,7 @@ const handleDislike = async (postId) => {
 )}
           </View>
         )}
-        {/* {isCameraOpen && cameraPermission && (
-          <Camera
-            style={styles.camera}
-            type={Camera.Constants.Type.back}
-            ref={(ref) => setCamera(ref)}
-          >
-            <TouchableOpacity style={styles.closeButton} onPress={() => setIsCameraOpen(false)}>
-              <Ionicons name="close" size={30} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.takePictureButton} onPress={takePicture}>
-              <Ionicons name="camera" size={50} color="white" />
-            </TouchableOpacity>
-          </Camera>
-        )} */}
+        
         {selectedImage && (
           <View style={styles.imageContainer}>
             <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedImage(null)}>
@@ -489,7 +464,8 @@ const handleDislike = async (postId) => {
           </View>
         )}
       </View>
-      {showPosts && (
+      {showPosts 
+      && posts && (
         <FlatList
         data={posts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage)}
         renderItem={({ item }) => (
@@ -539,9 +515,9 @@ const handleDislike = async (postId) => {
 
                 <Text style={styles.commentsTitle}>User Comments:</Text>
                 
-                {item.comments.slice().reverse().slice(0, commentsToShow).map((comment, index) => (
+                
+                {item && item.comments.reverse().slice(0, commentsToShow).map((comment, index) => (
                 <View key={index} style={styles.commentContainer}>
-                  {/* Display user profile image and name */}
                   <View style={styles.commentUserInfo}>
                     {userData && userData.userProfilePic && (
                         <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
@@ -550,14 +526,13 @@ const handleDislike = async (postId) => {
                       <Text style={styles.commentUserName}>{userData.userName}</Text>
                     )}
                   </View>
-                  {/* Display the comment text */}
                   <Text style={styles.commentText}>
-  {comment.text} - {comment.userName}
+  {comment.text}
 </Text>
 
                 </View>
               ))}
-              {/* Load more comments button */}
+           
               {item.comments.length > commentsToShow && (
                 <TouchableOpacity onPress={() => handleLoadMoreComments(item.id)} style={styles.loadMoreButton}>
                   <Text style={styles.loadMoreButtonText}>Load More Comments</Text>
@@ -773,9 +748,9 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   commentUserProfilePic: {
-    width: 20, // Adjust width to make the profile picture smaller
-    height: 20, // Adjust height to make the profile picture smaller
-    borderRadius: 10, // Keep border radius half of the width or height to maintain a circular shape
+    width: 20, 
+    height: 20,
+    borderRadius: 10, 
     marginRight: 10,
   },
   commentUserName: {
@@ -791,7 +766,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     marginTop: 10,
-    alignSelf: 'flex-start', // Align the button to the left side
+    alignSelf: 'flex-start', 
   },
   loadMoreButtonText: {
     color: '#fff',
