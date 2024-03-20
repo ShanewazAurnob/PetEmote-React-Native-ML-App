@@ -411,7 +411,7 @@ const handleDislike = async (postId) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Detect and Create a post</Text>
+        <Text style={styles.headerText}>Detect and Create a Post</Text>
       </View>
       <View style={styles.postContainer}>
         <TouchableOpacity style={styles.closeButton} onPress={() => setShowPosts(false)}>
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   postText: {
-    fontSize: 20,
+    fontSize: 18,
   },
   pagination: {
     flexDirection: 'row',
