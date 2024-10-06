@@ -35,6 +35,7 @@ const ProfileScreen = ({ navigation }) => {
         setImageUri(result.assets[0].uri)
 
         const fileName = `profileImages/${userData.userRef}.jpg`;
+        console.log(result.assets[0].uri);
 
         try {
           const response = await fetch(

@@ -11,6 +11,8 @@ import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client
 import CountryInfo from './screens/CountryInfo';
 import BarChartDemo from './screens/BarChartDemo';
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();  // This will hide all warnings
 
 const client = new ApolloClient({
   uri: 'https://countries.trevorblades.com/graphql',
