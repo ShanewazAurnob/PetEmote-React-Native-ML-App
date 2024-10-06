@@ -248,8 +248,9 @@ const postsPerPage = 5; // Number of posts per page
 
         const highestPredictionIndex = predictions.argMax(1).dataSync();
         const predictedClass = `${datasetClasses[highestPredictionIndex]}`;
-        console.log(predictedClass);
         setPrediction(predictedClass);
+        const data = softmaxPredictions.map(prob => (prob * 100).toFixed(2));
+        setPredictionsData(data);     
         setLoading(false);
     }
   };
@@ -559,12 +560,7 @@ const handleAddComment = async (postId) => {
                   <Text style={styles.interactionButtonText}>Like ({item.likes})</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => navigation.navigate('BarChartDemo')} style={styles.button}>
-            <Text>Result</Text>
-          </TouchableOpacity>
-
-
-                <TouchableOpacity style={styles.interactionButton} onPress={() => handleDislike(item.id)}>
+              <TouchableOpacity style={styles.interactionButton} onPress={() => handleDislike(item.id)}>
                   <Ionicons name="thumbs-down" size={20} color="red" />
                   <Text style={styles.interactionButtonText}>Dislike ({item.dislikes})</Text>
                 </TouchableOpacity>

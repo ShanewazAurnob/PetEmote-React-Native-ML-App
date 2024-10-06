@@ -38,7 +38,7 @@ export default function App() {
         name="BarChartDemo"
         component={BarChartDemo}
         options={({ navigation }) => ({
-          title: "Currency Detection Report",  // Title for the BarChartDemo screen
+          title: "Detection Report",  // Title for the BarChartDemo screen
           headerLeft: () => (
             <Ionicons 
               name="arrow-back" 

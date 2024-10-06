@@ -30,7 +30,7 @@ const BarChartDemo = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Pet Detection Summary</Text>
+      <Text style={styles.header}>Emotion Detection Summary</Text>
 
       <View style={styles.detailsContainer}>
         <Text style={styles.detail}>
@@ -39,7 +39,7 @@ const BarChartDemo = () => {
         </Text>
         <Text style={styles.detail}>
           <Text style={styles.label}>App Name: </Text>
-          Pet Detection App
+          Pet Facial Expression Detection App
         </Text>
       </View>
 
