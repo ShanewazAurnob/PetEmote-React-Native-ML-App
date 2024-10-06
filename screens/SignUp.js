@@ -171,17 +171,17 @@ export default function SignUp({ navigation }) {
           style={styles.logo}
           source={require('../assets/L2.png')}
         />
-        <TextInput
-          style={styles.input}
-          placeholderTextColor="#aaaaaa"
-          placeholder='User Name'
-          onChangeText={(text) => {
-            setUserName(text.trim());
-          }}
-          value={userName}
-          underlineColorAndroid="transparent"
-          autoCapitalize="none"
-        />
+      <TextInput
+  style={styles.input}
+  placeholderTextColor="#aaaaaa"
+  placeholder="User Name"
+  onChangeText={(text) => {
+    setUserName(text);  // No trimming or modification here to test space input
+  }}
+  value={userName}
+  underlineColorAndroid="transparent"
+  autoCapitalize="none"
+/>
         {userNameErrorMessage[0].length > 0 && userName.length > 0 && <Text style={{ color: userNameErrorMessage[1], paddingLeft: 20, fontSize: 13 }}>*{userNameErrorMessage[0]}*</Text>}
         <TextInput
           style={styles.input}

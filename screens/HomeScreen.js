@@ -4,9 +4,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, addDoc, updateDoc, doc, serverTimestamp, increment, arrayUnion, arrayRemove, getDoc, onSnapshot } from 'firebase/firestore'; // Import Firestore methods
 import { firestore } from '../config'; 
+import { useNavigation } from '@react-navigation/native';
+import BarChartDemo from './BarChartDemo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as tf from "@tensorflow/tfjs";
 import * as FileSystem from "expo-file-system";
+
 import {
   bundleResourceIO,
   decodeJpeg,
@@ -43,6 +46,11 @@ const transformImageToTensor = async (uri) => {
 };
 
 const PostScreen = () => {
+
+  const navigation = useNavigation();  // Add navigation here
+
+
+
   const [cameraPermission, setCameraPermission] = useState(null);
   const [galleryPermission, setGalleryPermission] = useState(null);
   const [camera, setCamera] = useState(null);
@@ -63,6 +71,10 @@ const PostScreen = () => {
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState(null);
   const [model, setModel] = useState();
+  const [profileImage, setProfileImage] = useState('default_profile_image_url');
+  const [predictionsData, setPredictionsData] = useState([0,0,0]);
+
+
 // Add state variables for pagination
 const [currentPage, setCurrentPage] = useState(1);
 const postsPerPage = 5; // Number of posts per page
@@ -189,13 +201,18 @@ const postsPerPage = 5; // Number of posts per page
 
         const imageTensor = await transformImageToTensor(result.assets[0].uri);
         const predictions = model.predict(imageTensor);
+
+        // Find the index of the class with the highest probability
+        const softmaxPredictions = predictions.softmax().dataSync();
         const highestPredictionIndex = predictions.argMax(1).dataSync();
         const predictedClass = `${datasetClasses[highestPredictionIndex]}`;
-        console.log(predictedClass);
+        const predictedProbability = softmaxPredictions[highestPredictionIndex];
         setPrediction(predictedClass);
         setLoading(false);
-        
-          setIsCameraOpen(false); // Close the camera after taking the picture
+        const data = softmaxPredictions.map(prob => (prob * 100).toFixed(2));
+        setPredictionsData(data);     
+        console.log(data);   
+        setIsCameraOpen(false); // Close the camera after taking the picture
         setShowPostButton(true);
         }
       } else {
@@ -226,6 +243,9 @@ const postsPerPage = 5; // Number of posts per page
 
         const imageTensor = await transformImageToTensor(result.assets[0].uri);
         const predictions = model.predict(imageTensor);
+
+        const softmaxPredictions = predictions.softmax().dataSync();
+
         const highestPredictionIndex = predictions.argMax(1).dataSync();
         const predictedClass = `${datasetClasses[highestPredictionIndex]}`;
         console.log(predictedClass);
@@ -296,37 +316,40 @@ const handleDislike = async (postId) => {
 };
 
   
+const handleAddComment = async (postId) => {
+  const currentCommentText = commentTexts[postId];
+  if (!currentCommentText || currentCommentText.trim() === '') {
+    return;
+  }
+  try {
+    const postDataRef = doc(firestore, 'posts', postId);
+    const postDataSnapshot = await getDoc(postDataRef);
+    const postData = postDataSnapshot.data();
 
-  const handleAddComment = async (postId) => {
-    const currentCommentText = commentTexts[postId];
-    if (!currentCommentText || currentCommentText.trim() === '') {
-      return;
-    }
-    try {
-      const postDataRef = doc(firestore, 'posts', postId);
-      const postDataSnapshot = await getDoc(postDataRef);
-      const postData = postDataSnapshot.data();
+    const updatedComments = [
+      ...postData.comments,
+      {
+        text: currentCommentText,
+        userName: userData.userName,     // Store the commenter's name
+        userId: currentUserId,           // Store the commenter's ID
+        userProfilePic: userData.userProfilePic // Store the commenter's profile picture
+      }
+    ];
 
-      const updatedComments = [
-        ...postData.comments,
-        {
-          text: currentCommentText,
-          userName: userData.userName, 
-          userId: currentUserId,
-        }
-      ];
+    await updateDoc(postDataRef, {
+      comments: updatedComments,
+    });
 
-      await updateDoc(postDataRef, {
-        comments: updatedComments,
-      });
+    console.log('Comment added to post with ID: ', postId);
+    setCommentTexts({ ...commentTexts, [postId]: '' });
+  } catch (error) {
+    console.error('Error adding comment: ', error);
+  }
+};
 
-      console.log('Comment added to post with ID: ', postId);
-      setCommentTexts({ ...commentTexts, [postId]: '' });
-    } catch (error) {
-      console.error('Error adding comment: ', error);
-    }
-  };
-
+  const handleViewReport=()=>{
+    navigation.navigate('BarChartDemo', { predictions: predictionsData }   )   
+  }
   
   const handlePost = async () => {
     if (isCameraOpen) {
@@ -347,6 +370,7 @@ const handleDislike = async (postId) => {
         comments: [],
         createdAt: serverTimestamp(),
         userId: currentUserId,
+        imageUrl: "",
         user: {
           name: userData.userName,
           profileImage: userData.userProfilePic
@@ -354,7 +378,39 @@ const handleDislike = async (postId) => {
       };
   
       if (selectedImage) {
-        postData.imageUrl = selectedImage; // Set imageUrl only if an image is selected
+        const correctImageURL = selectedImage.split("/").pop();
+        postData.imageUrl = correctImageURL; // Set imageUrl only if an image is selected
+        try {
+  
+          const fileName = `images/${correctImageURL}`;
+          console.log(fileName);
+  
+          try {
+            const response = await fetch(
+              'https://firebasestorage.googleapis.com/v0/b/'+storageUrl+'/o?name='+fileName,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'image/jpeg' || 'image/png' || 'image/jpg',
+                },
+                body: await fetch(result.assets[0].uri).then((response) => response.blob()),
+              }
+            );
+            if (response.ok) {
+              console.log("image uploaded");
+            } 
+            else {
+              console.error('Error uploading image:', response.statusText);
+            }
+           } 
+           catch (error) {
+            console.error('Error uploading image 2:', error);
+          }
+          
+        } catch (error) {
+          console.log('Error uploading image 3:', error);
+          Alert.alert('Upload Failed', 'Failed to upload image. Please try again later.');
+        }
         setImageUri(null);
       }
   
@@ -405,7 +461,8 @@ const handleDislike = async (postId) => {
       )}
     </View>
   );
-  
+
+
 
 
   return (
@@ -430,81 +487,95 @@ const handleDislike = async (postId) => {
         </View>
         {!selectedImage && (
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.actionButton} onPress={takePicture}>
-              <Ionicons name="camera" size={24} color="black" />
-              <Text style={styles.actionText}>Photo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={pickImageFromGallery}>
-              <Ionicons name="image" size={24} color="black" />
-              <Text style={styles.actionText}>Gallery</Text>
-            </TouchableOpacity>
-
-              {showPostButton && (
-  <TouchableOpacity style={styles.postImageButton} onPress={handlePostAfterImageSelection}>
-    <Text style={styles.postImageButtonText}>Post</Text>
+  <TouchableOpacity style={styles.actionButton} onPress={takePicture}>
+    <Ionicons name="camera" size={24} color="black" />
+    <Text style={styles.actionText}>Photo</Text>
   </TouchableOpacity>
+  
+  <TouchableOpacity style={styles.actionButton} onPress={pickImageFromGallery}>
+    <Ionicons name="image" size={24} color="black" />
+    <Text style={styles.actionText}>Gallery</Text>
+  </TouchableOpacity>
+
+  {showPostButton && (
+    <View >
+      <TouchableOpacity style={styles.postImageButton} onPress={handlePostAfterImageSelection}>
+        <Text style={styles.postImageButtonText}>Post</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+</View>
+
 )}
-          </View>
-        )}
         
         {selectedImage && (
-          <View style={styles.imageContainer}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedImage(null)}>
-              <Ionicons name="close" size={30} color="black" />
-            </TouchableOpacity>
-            <Image source={{ uri: selectedImage }} style={styles.image} />
-            <Text style={styles.predictionText}>Detected Expression: {loading ? (
-                <ActivityIndicator size={24} color={"#002D02"} />
-              ) : (
-                prediction
-              )}</Text>
-            <TouchableOpacity style={styles.postImageButton} onPress={handlePost}>
-              <Text style={styles.postImageButtonText}>Post</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-      {showPosts 
-      && posts && (
-        <FlatList
-        data={posts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage)}
-        renderItem={({ item }) => (
-            <View style={styles.post}>
-             <View style={styles.userInfo}>
-               {item.user && item.user.profileImage && (
-                 <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
-                  )}
-                      {item.user && item.user.name && (
-                         <Text style={styles.userName}>{item.user.name}</Text>
-                   )}
-                </View>
+  <View style={styles.imageContainer}>
+    <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedImage(null)}>
+      <Ionicons name="close" size={30} color="black" />
+    </TouchableOpacity>
+    <Image source={{ uri: selectedImage }} style={styles.image} />
+    <Text style={styles.predictionText}>
+      Detected Expression: {loading ? (
+        <ActivityIndicator size={24} color={"#002D02"} />
+      ) : (
+        prediction
+      )}
+    </Text>
+    <TouchableOpacity style={styles.postImageButton} onPress={handlePost}>
+      <Text style={styles.postImageButtonText}>Post</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.postImageButton} onPress={handleViewReport}>
+        <Text style={styles.postImageButtonText}>View Report</Text>
+      </TouchableOpacity>
+  </View>
+)}
+</View>
+      
+{showPosts && posts && (
+  <FlatList
+    data={posts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage)}
+    renderItem={({ item }) => (
+      <View style={styles.post}>
+        <View style={styles.userInfo}>
+          {item.user && item.user.profileImage && (
+            <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
+          )}
+          {item.user && item.user.name && (
+            <Text style={styles.userName}>{item.user.name}</Text>
+          )}
+        </View>
 
 
-                {item.text !== '' && (
-                <Text style={styles.postText}>{item.text}</Text>
-              )}
-              {item.imageUrl && (
-                <Image source={{ uri: item.imageUrl }} style={styles.image} />
-              )}
-             
-              <Text style={styles.predictionText}>Detected Expression: {item.prediction}</Text>
+        {item.text !== '' && <Text style={styles.postText}>{item.text}</Text>}
+        {/* {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.image} />} */}
+        <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.imageUrl)}?alt=media` }}/>
+
+        <Text style={styles.predictionText}>Detected Expression: {item.prediction}</Text>
+
+
               <View style={styles.interactionContainer}>
                 <TouchableOpacity style={styles.interactionButton} onPress={() => handleLike(item.id)}>
                   <Ionicons name="thumbs-up" size={20} color="blue" />
                   <Text style={styles.interactionButtonText}>Like ({item.likes})</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => navigation.navigate('BarChartDemo')} style={styles.button}>
+            <Text>Result</Text>
+          </TouchableOpacity>
+
+
                 <TouchableOpacity style={styles.interactionButton} onPress={() => handleDislike(item.id)}>
                   <Ionicons name="thumbs-down" size={20} color="red" />
                   <Text style={styles.interactionButtonText}>Dislike ({item.dislikes})</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.commentsContainer}>
-              <TextInput
-                 placeholder="Write a comment..."
-                 value={commentTexts[item.id] || ''}
-                 onChangeText={(text) => setCommentTexts({ ...commentTexts, [item.id]: text })}
-                 style={styles.inputComment}
-                  />
+  <TextInput
+    placeholder="Write a comment..."
+    value={commentTexts[item.id] || ''}  // Bind to the comment text for the current item
+    onChangeText={(text) => setCommentTexts({ ...commentTexts, [item.id]: text })}  // Update the state for the specific comment
+    style={styles.inputComment}  // Apply styles for the input
+  />
 
                 <TouchableOpacity
                   style={styles.commentButton}
@@ -515,23 +586,22 @@ const handleDislike = async (postId) => {
 
                 <Text style={styles.commentsTitle}>User Comments:</Text>
                 
-                
                 {item && item.comments.reverse().slice(0, commentsToShow).map((comment, index) => (
-                <View key={index} style={styles.commentContainer}>
-                  <View style={styles.commentUserInfo}>
-                    {userData && userData.userProfilePic && (
-                        <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(item.user.profileImage)}?alt=media` }} style={styles.profileImage} />
-                    )}
-                    {userData && userData.userName && (
-                      <Text style={styles.commentUserName}>{userData.userName}</Text>
-                    )}
-                  </View>
-                  <Text style={styles.commentText}>
-  {comment.text}
-</Text>
+  <View key={index} style={styles.commentContainer}>
+    <View style={styles.commentUserInfo}>
+      {comment.userProfilePic && (
+        <Image source={{ uri: `https://firebasestorage.googleapis.com/v0/b/${storageUrl}/o/${encodeURIComponent(comment.userProfilePic)}?alt=media` }} style={styles.profileImage} />
+      )}
+      {comment.userName && (
+        <Text style={styles.commentUserName}>{comment.userName}</Text>
+      )}
+    </View>
+    <Text style={styles.commentText}>
+      {comment.text}
+    </Text>
+  </View>
+))}
 
-                </View>
-              ))}
            
               {item.comments.length > commentsToShow && (
                 <TouchableOpacity onPress={() => handleLoadMoreComments(item.id)} style={styles.loadMoreButton}>
@@ -574,25 +644,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 10,
+    marginBottom: 8,
   },
   headerText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   postContainer: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 10,
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    borderRadius: 15,
+    marginBottom: 15,
+    paddingHorizontal: 5,
     paddingBottom: 10,
   },
   inputContainer: {
@@ -717,6 +787,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginTop: 10,
   },
+  
   postImageButtonText: {
     color: '#fff',
   },
@@ -796,6 +867,15 @@ const styles = StyleSheet.create({
   pageNumber: {
     paddingHorizontal: 10,
     fontSize: 16,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0066cc',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 10,
   },
 
 });

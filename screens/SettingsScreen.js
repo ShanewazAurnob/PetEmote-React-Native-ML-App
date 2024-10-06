@@ -51,16 +51,15 @@ const SettingsScreen = ({ navigation }) => {
       </View>
 
       {/* GraphQL Button */}
-      <TouchableOpacity onPress={handleGraphQl} style={styles.button}>
-          <Text>Graphql</Text>
+      <TouchableOpacity onPress={handleGraphQl} style={styles.commentButton}>
+          <Text style={styles.commentButtonText}>Graphql</Text>
         </TouchableOpacity>
 
+      {/*Logout Button*/}
+      <TouchableOpacity onPress={onSignOutPress}style={styles.commentButton}>
+                  <Text style={styles.commentButtonText}>Logout</Text>
+                </TouchableOpacity>
 
-      {/* Logout Button */}
-      <TouchableOpacity onPress={onSignOutPress} style={styles.button}>
-        <AntDesign name="logout" size={24} color={darkModeEnabled ? '#ffffff' : '#000000'} />
-        <Text style={[styles.buttonTitle, { color: darkModeEnabled ? '#ffffff' : '#000000' }]}>Logout</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -73,7 +72,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
   },
@@ -103,6 +102,20 @@ const styles = StyleSheet.create({
   buttonTitle: {
     fontSize: 18,
     marginLeft: 10,
+  },
+
+  commentButton: {
+    backgroundColor: '#4267B2',
+    borderRadius: 30,
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    marginTop: 12,
+  },
+  commentButtonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+
   },
 });
 
