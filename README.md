@@ -47,7 +47,7 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/petemote.git
+   git clone (https://github.com/ShanewazAurnob/PetEmote-React-Native-ML-App.git)
    ```
 2. Install the dependencies:
    ```bash
