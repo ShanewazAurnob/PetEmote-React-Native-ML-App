@@ -1,58 +1,59 @@
 # PetEmote
 
-**PetEmote** is a React Native mobile application that recognizes pet facial expressions using machine learning models integrated with TensorFlow Lite. The app provides users with interactive features such as commenting, liking/disliking posts, and viewing pet reactions in real-time. The app uses Firebase for backend services, including real-time data handling and user authentication.
+**PetEmote** is a React Native mobile application that recognizes pet facial expressions using machine learning models integrated with TensorFlow Lite. The app provides users with interactive features such as real-time commenting, liking/disliking posts, real-time username verification, and multimedia playback, all while using Firebase for backend services.
 
 ## Features
 
-1. **Pet Facial Expression Recognition**: Real-time pet emotion detection using TensorFlow Lite.
-2. **Realtime Commenting System**: Comment on posts without reloading or refreshing, similar to Facebook.
-3. **Like & Dislike Button**: React to pet photos with a like/dislike system.
-4. **Unique Username Verification**: Real-time username availability check during registration.
-5. **Email & Phone Verification**: Ensure user authenticity with email and phone verification similar to Gmail.
-6. **Form Manipulation**: Handle multiple text boxes and dropdowns efficiently.
-7. **Real-Time Rating System**: Rate posts with real-time feedback.
-8. **Pagination**: Efficiently load pet-related content with pagination.
-9. **Multimedia Playback**: Play audio and videos embedded in posts (e.g., YouTube videos).
-10. **Google Maps Integration**: Display real-time location data of pet events or users' pets on Google Maps.
-11. **Session Management**: Handle login/logout phases with session information.
-12. **File Upload**: Upload pet images and files and display them in posts.
-13. **Datepicker**: Easily select dates for pet-related events.
-14. **Animations**: Use GSAP for smooth transitions and animations in the app.
-15. **Collaborative Tools**: The project uses Git, GulpJs, Webpack, and other modern tools for workflow management.
-16. **GraphQL & RESTful APIs**: Data is fetched using both GraphQL and RESTful APIs for efficiency.
-17. **Reports**: Generate reports using Crystal Report integration.
+1. **Submit ERD in Scalable PDF**: ERD (Entity Relationship Diagram) is drawn in Visio, EDrawMax, LaTex, or other tools that provide scalable PDFs for database structure.
+2. **Realtime Commenting System**: Users can comment on posts without reloading the page, similar to Facebook.
+3. **Like & Dislike Button with Count**: Users can like or dislike posts, and the app displays a count of reactions in real-time.
+4. **Realtime Username Verification**: Verify unique usernames in real-time without page reloads, ensuring user availability during registration.
+5. **Email & Phone Number Verification**: Verify email and phone numbers similar to Gmail’s registration process.
+6. **Multiple Text Box & Dropdown Manipulation**: Manage multiple text boxes and dropdown lists within forms efficiently.
+7. **Interactive Real-Time Rating**: Provide rating options for posts, with real-time feedback visible to users.
+8. **Pagination**: Efficiently load posts and content with pagination to improve user experience.
+9. **Multimedia Playback**: Play embedded audio or video files hosted on external databases, such as YouTube.
+10. **Google Maps Integration**: Display real-time location data for pet events or users' pets using Google Maps or embedded map iframes.
+11. **Session Management**: Use session information to manage login and logout phases.
+12. **TensorFlow Lite Integration**: Detect pet facial expressions in real-time using TensorFlow Lite.
+13. **Image/File Upload**: Allow users to upload images and files, displaying them on posts.
+14. **Datepicker**: Provide date-picking functionality for pet-related events.
+15. **Animations with GSAP**: Embed smooth transitions and animations using GSAP in the app interface.
+16. **Modern Workflow & Collaboration Tools**: Utilize Git, GulpJs, GrantJs, Webpack, and SVN for efficient workflow management.
+17. **Simple GraphQL Application**: Use GraphQL for querying data and handling backend operations efficiently.
+18. **RESTful APIs / SOAP APIs**: Integrate with RESTful APIs or SOAP APIs for backend communication.
+19. **Crystal Report Integration**: Generate reports using Crystal Report.
 
 ## Technologies Used
 
-- **React Native**: For building the cross-platform mobile app.
+- **React Native with Expo**: For cross-platform mobile app development.
 - **Firebase**: Backend services including database, authentication, and real-time updates.
 - **TensorFlow Lite**: For real-time pet facial expression recognition.
-- **GSAP**: For animations in the app interface.
-- **Git/GulpJs/Webpack**: For modern workflow and collaboration.
-- **GraphQL & REST APIs**: For efficient data management.
-- **Crystal Report**: For report generation.
+- **GSAP**: For animations and transitions in the app interface.
+- **GraphQL & RESTful APIs**: For efficient backend data handling.
+- **Crystal Report**: For generating reports.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js
-- React Native CLI
+- Expo CLI
 - Firebase account
 - TensorFlow Lite
 - Google Maps API key (for location features)
-- Git (for version control)
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone (https://github.com/ShanewazAurnob/PetEmote-React-Native-ML-App.git)
+   git clone https://github.com/ShanewazAurnob/PetEmote-React-Native-ML-App.git
    ```
 2. Install the dependencies:
    ```bash
    npm install
    ```
+
 3. Set up Firebase:
    - Go to the Firebase Console, create a new project, and enable the necessary services like Firestore, Authentication, etc.
    - Download the `google-services.json` file and place it in your Android project directory.
@@ -63,21 +64,37 @@
 5. Add Google Maps API Key:
    - Obtain your API key from the [Google Cloud Console](https://cloud.google.com/maps-platform) and add it to your project.
 
-### Running the App
 
-- To run on Android:
-  ```bash
-  npm run android
-  ```
+### Running the App with Expo
 
-- To run on iOS:
-  ```bash
-  npm run ios
-  ```
+1. Start the Expo server:
+   ```bash
+   expo start
+   ```
+
+2. Run the app:
+   - For Android, you can either scan the QR code using the Expo Go app or run:
+     ```bash
+     expo run:android
+     ```
+   - For iOS, you can scan the QR code using the Expo Go app or run:
+     ```bash
+     expo run:ios
+     ```
 
 ### Deployment
 
-Deploy the app to Android/iOS stores using standard practices, or integrate Firebase Hosting for web-based deployment (if needed).
+Deploy the app to Android/iOS stores using standard practices with Expo's build service:
+
+- For Android:
+  ```bash
+  expo build:android
+  ```
+
+- For iOS:
+  ```bash
+  expo build:ios
+  ```
 
 ## Contributing
 
