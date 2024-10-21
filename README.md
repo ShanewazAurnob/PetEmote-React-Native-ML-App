@@ -4,25 +4,25 @@
 
 ## Features
 
-1. **Submit ERD in Scalable PDF**: ERD (Entity Relationship Diagram) is drawn in Visio, EDrawMax, LaTex, or other tools that provide scalable PDFs for database structure.
-2. **Realtime Commenting System**: Users can comment on posts without reloading the page, similar to Facebook.
-3. **Like & Dislike Button with Count**: Users can like or dislike posts, and the app displays a count of reactions in real-time.
-4. **Realtime Username Verification**: Verify unique usernames in real-time without page reloads, ensuring user availability during registration.
-5. **Email & Phone Number Verification**: Verify email and phone numbers similar to Gmail’s registration process.
-6. **Multiple Text Box & Dropdown Manipulation**: Manage multiple text boxes and dropdown lists within forms efficiently.
-7. **Interactive Real-Time Rating**: Provide rating options for posts, with real-time feedback visible to users.
-8. **Pagination**: Efficiently load posts and content with pagination to improve user experience.
-9. **Multimedia Playback**: Play embedded audio or video files hosted on external databases, such as YouTube.
-10. **Google Maps Integration**: Display real-time location data for pet events or users' pets using Google Maps or embedded map iframes.
-11. **Session Management**: Use session information to manage login and logout phases.
-12. **TensorFlow Lite Integration**: Detect pet facial expressions in real-time using TensorFlow Lite.
-13. **Image/File Upload**: Allow users to upload images and files, displaying them on posts.
-14. **Datepicker**: Provide date-picking functionality for pet-related events.
-15. **Animations with GSAP**: Embed smooth transitions and animations using GSAP in the app interface.
-16. **Modern Workflow & Collaboration Tools**: Utilize Git, GulpJs, GrantJs, Webpack, and SVN for efficient workflow management.
-17. **Simple GraphQL Application**: Use GraphQL for querying data and handling backend operations efficiently.
-18. **RESTful APIs / SOAP APIs**: Integrate with RESTful APIs or SOAP APIs for backend communication.
-19. **Crystal Report Integration**: Generate reports using Crystal Report.
+
+1. **Realtime Commenting System**: Users can comment on posts without reloading the page, similar to Facebook.
+2. **Like & Dislike Button with Count**: Users can like or dislike posts, and the app displays a count of reactions in real-time.
+3. **Realtime Username Verification**: Verify unique usernames in real-time without page reloads, ensuring user availability during registration.
+4. **Email & Phone Number Verification**: Verify email and phone numbers similar to Gmail’s registration process.
+5. **Multiple Text Box & Dropdown Manipulation**: Manage multiple text boxes and dropdown lists within forms efficiently.
+6. **Interactive Real-Time Rating**: Provide rating options for posts, with real-time feedback visible to users.
+7. **Pagination**: Efficiently load posts and content with pagination to improve user experience.
+8. **Multimedia Playback**: Play embedded audio or video files hosted on external databases, such as YouTube.
+9. **Google Maps Integration**: Display real-time location data for pet events or users' pets using Google Maps or embedded map iframes.
+10. **Session Management**: Use session information to manage login and logout phases.
+11. **TensorFlow Lite Integration**: Detect pet facial expressions in real-time using TensorFlow Lite.
+12. **Image/File Upload**: Allow users to upload images and files, displaying them on posts.
+13. **Datepicker**: Provide date-picking functionality for pet-related events.
+14. **Animations with GSAP**: Embed smooth transitions and animations using GSAP in the app interface.
+15. **Modern Workflow & Collaboration Tools**: Utilize Git, GulpJs, GrantJs, Webpack, and SVN for efficient workflow management.
+16. **Simple GraphQL Application**: Use GraphQL for querying data and handling backend operations efficiently.
+17. **RESTful APIs / SOAP APIs**: Integrate with RESTful APIs or SOAP APIs for backend communication.
+18. **Crystal Report Integration**: Generate reports using Crystal Report.
 
 ## Technologies Used
 
